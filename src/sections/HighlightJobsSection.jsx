@@ -1,37 +1,35 @@
-﻿const jobs = [
-  {
-    title: "Kế Toán Trưởng",
-    company: "Công ty TNHH Chế tạo Tân Phát",
-    salary: "Thỏa thuận",
-    location: "Tây Ninh (mới)"
-  },
-  {
-    title: "Kiến Trúc Sư (Kiến Trúc, Nội Thất, Cảnh Quan)",
-    company: "CTY TNHH Tư vấn Thiết kế & Xây dựng",
-    salary: "10 - 15 triệu",
-    location: "Đà Nẵng (mới)"
-  },
-  {
-    title: "Kỹ Sư Kết Cấu (Lương Up To 30tr/Tháng)",
-    company: "Công ty CP Thương mại Đầu tư",
-    salary: "13 - 30 triệu",
-    location: "Hải Phòng (mới)"
-  },
-  {
-    title: "Kỹ Sư Xây Dựng/Kỹ Sư Thiết Kế Hạ Tầng",
-    company: "Công ty CP Tư vấn Xây dựng 116",
-    salary: "15 - 30 triệu",
-    location: "Hà Nội"
+﻿const formatNumber = (value) => {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue) || numberValue <= 0) {
+    return "";
   }
-];
+  return numberValue.toLocaleString("vi-VN");
+};
 
-const HighlightJobsSection = () => {
+const formatSalary = (job) => {
+  const min = formatNumber(job.salaryMin);
+  const max = formatNumber(job.salaryMax);
+  const salary = formatNumber(job.salary);
+  const currency = job.currency || "VND";
+
+  if (min && max) {
+    return `${min} - ${max} ${currency}`;
+  }
+  if (salary) {
+    return `${salary} ${currency}`;
+  }
+  return "Thỏa thuận";
+};
+
+import { Link } from "react-router-dom";
+
+const HighlightJobsSection = ({ jobs, loading, error }) => {
   return (
     <section className="highlight-jobs">
       <div className="highlight-header">
         <div>
           <h2>Việc làm hấp dẫn</h2>
-          <span className="ai-tag">Đề xuất bởi TOPPYAI</span>
+          <span className="ai-tag">Ưu tiên mức lương cao</span>
         </div>
         <div className="highlight-actions">
           <a href="#">Xem tất cả</a>
@@ -48,22 +46,36 @@ const HighlightJobsSection = () => {
 
       <div className="highlight-grid">
         <div className="highlight-list">
-          {jobs.map((job) => (
-            <article className="job-card" key={job.title}>
-              <div className="job-logo" />
-              <div className="job-info">
-                <h3>{job.title}</h3>
-                <p>{job.company}</p>
-                <div className="job-meta">
-                  <span>{job.salary}</span>
-                  <span>{job.location}</span>
+          {loading && <p>Đang tải dữ liệu...</p>}
+          {!loading && error && <p>{error}</p>}
+          {!loading &&
+            !error &&
+            jobs.map((job) => (
+              <Link
+                to={`/jobs/${job.id}`}
+                className="job-card"
+                key={job.id ?? job.title}
+              >
+                <div className="job-logo">
+                  {job.companyLogoUrl ? (
+                    <img src={job.companyLogoUrl} alt={job.companyName || "Logo"} />
+                  ) : (
+                    <span>{(job.companyName || "C")[0]}</span>
+                  )}
                 </div>
-              </div>
-              <button className="heart-btn" type="button" aria-label="Lưu">
-                <span />
-              </button>
-            </article>
-          ))}
+                <div className="job-info">
+                  <h3>{job.title}</h3>
+                  <p>{job.companyName || "Đang cập nhật"}</p>
+                  <div className="job-meta">
+                    <span>{formatSalary(job)}</span>
+                    <span>{job.location || "Toàn quốc"}</span>
+                  </div>
+                </div>
+                <button className="heart-btn" type="button" aria-label="Lưu">
+                  <span />
+                </button>
+              </Link>
+            ))}
         </div>
         <aside className="highlight-banner">
           <div className="banner-glow" />

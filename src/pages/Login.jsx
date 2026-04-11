@@ -29,7 +29,7 @@ const Login = () => {
         localStorage.setItem("ttjobs_token", data.token);
       }
       setStatus({ loading: false, error: "", success: "Đăng nhập thành công." });
-      navigate("/jobs", { replace: true });
+      navigate("/", { replace: true });
     } catch (err) {
       setStatus({ loading: false, error: err.message, success: "" });
     }

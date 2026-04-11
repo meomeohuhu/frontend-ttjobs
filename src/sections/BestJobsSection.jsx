@@ -1,51 +1,75 @@
-﻿const filters = ["Ngẫu nhiên", "Hà Nội", "Thành phố Hồ Chí Minh", "Miền Bắc", "Miền Nam"];
+﻿import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
 
-const jobs = [
-  {
-    title: "Bác sĩ Thú Y (Lương Cứng Từ 18 Triệu + Phụ Cấp + Thưởng)",
-    company: "Công ty TNHH Linkfarm",
-    salary: "Thỏa thuận",
-    location: "Hưng Yên (mới) & 3 nơi"
-  },
-  {
-    title: "Giám Sát Thi Công/Cán Bộ Kỹ Thuật/Kỹ Thuật Hiện Trường",
-    company: "Công ty CP Đầu tư DIC",
-    salary: "15 - 20 triệu",
-    location: "Hà Nội"
-  },
-  {
-    title: "Trưởng Nhóm Cửa Hàng Khu Vui Chơi (F&B)",
-    company: "CTY TNHH AEON Fantasy Việt Nam",
-    salary: "11 - 13 triệu",
-    location: "Hà Nội"
-  },
-  {
-    title: "Head Of Business Development - Freight Forwarding",
-    company: "Tổng Công ty Logistics",
-    salary: "Thỏa thuận",
-    location: "Hà Nội"
-  },
-  {
-    title: "Kỹ Sư Điện - Kỹ Sư Giám Sát Công Trình",
-    company: "Công ty CP Đầu tư và Năng lượng",
-    salary: "15 - 20 triệu",
-    location: "Hà Nội"
-  },
-  {
-    title: "Giám Sát Khu Vui Chơi (Aeon Mall Long Biên)",
-    company: "Công ty TNHH Dream Games Việt Nam",
-    salary: "Thỏa thuận",
-    location: "Hà Nội"
-  }
+const filters = [
+  "Ngẫu nhiên",
+  "Hà Nội",
+  "Thành phố Hồ Chí Minh",
+  "Miền Bắc",
+  "Miền Nam"
 ];
 
-const BestJobsSection = () => {
+const formatNumber = (value) => {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue) || numberValue <= 0) {
+    return "";
+  }
+  return numberValue.toLocaleString("vi-VN");
+};
+
+const formatSalary = (job) => {
+  const min = formatNumber(job.salaryMin);
+  const max = formatNumber(job.salaryMax);
+  const salary = formatNumber(job.salary);
+  const currency = job.currency || "VND";
+
+  if (min && max) {
+    return `${min} - ${max} ${currency}`;
+  }
+  if (salary) {
+    return `${salary} ${currency}`;
+  }
+  return "Thỏa thuận";
+};
+
+const filterJobsByRegion = (jobs, region) => {
+  if (!region || region === "Ngẫu nhiên") {
+    return jobs;
+  }
+  const normalized = region.toLowerCase();
+  if (normalized.includes("miền bắc")) {
+    return jobs.filter((job) =>
+      ["hà nội", "hải phòng", "bắc ninh", "hưng yên", "quảng ninh"].some((city) =>
+        (job.location || "").toLowerCase().includes(city)
+      )
+    );
+  }
+  if (normalized.includes("miền nam")) {
+    return jobs.filter((job) =>
+      ["hồ chí minh", "tp.hcm", "bình dương", "đồng nai", "cần thơ"].some((city) =>
+        (job.location || "").toLowerCase().includes(city)
+      )
+    );
+  }
+  return jobs.filter((job) =>
+    (job.location || "").toLowerCase().includes(normalized)
+  );
+};
+
+const BestJobsSection = ({ jobs, loading, error }) => {
+  const [activeRegion, setActiveRegion] = useState(filters[0]);
+
+  const filteredJobs = useMemo(
+    () => filterJobsByRegion(jobs, activeRegion),
+    [jobs, activeRegion]
+  );
+
   return (
     <section className="best-jobs">
       <div className="section-head">
         <div>
           <h2>Việc làm tốt nhất</h2>
-          <span className="ai-tag">Đề xuất bởi TOPPYAI</span>
+          <span className="ai-tag">Top job có lượt lưu nhiều nhất</span>
         </div>
         <div className="section-actions">
           <a href="#">Xem tất cả</a>
@@ -71,11 +95,12 @@ const BestJobsSection = () => {
           <button className="chip-nav" type="button" aria-label="Trước">
             <span />
           </button>
-          {filters.map((item, index) => (
+          {filters.map((item) => (
             <button
               key={item}
               type="button"
-              className={`chip ${index === 0 ? "active" : ""}`}
+              className={`chip ${item === activeRegion ? "active" : ""}`}
+              onClick={() => setActiveRegion(item)}
             >
               {item}
             </button>
@@ -95,22 +120,39 @@ const BestJobsSection = () => {
       </div>
 
       <div className="job-cards">
-        {jobs.map((job) => (
-          <article className="job-card" key={job.title}>
-            <div className="job-logo" />
-            <div className="job-info">
-              <h3>{job.title}</h3>
-              <p>{job.company}</p>
-              <div className="job-meta">
-                <span>{job.salary}</span>
-                <span>{job.location}</span>
+        {loading && <p>Đang tải dữ liệu...</p>}
+        {!loading && error && <p>{error}</p>}
+        {!loading && !error && filteredJobs.length === 0 && (
+          <p>Chưa có công việc phù hợp khu vực này.</p>
+        )}
+        {!loading &&
+          !error &&
+          filteredJobs.map((job) => (
+            <Link
+              to={`/jobs/${job.id}`}
+              className="job-card"
+              key={job.id ?? job.title}
+            >
+              <div className="job-logo">
+                {job.companyLogoUrl ? (
+                  <img src={job.companyLogoUrl} alt={job.companyName || "Logo"} />
+                ) : (
+                  <span>{(job.companyName || "C")[0]}</span>
+                )}
               </div>
-            </div>
-            <button className="heart-btn" type="button" aria-label="Lưu">
-              <span />
-            </button>
-          </article>
-        ))}
+              <div className="job-info">
+                <h3>{job.title}</h3>
+                <p>{job.companyName || "Đang cập nhật"}</p>
+                <div className="job-meta">
+                  <span>{formatSalary(job)}</span>
+                  <span>{job.location || "Toàn quốc"}</span>
+                </div>
+              </div>
+              <button className="heart-btn" type="button" aria-label="Lưu">
+                <span />
+              </button>
+            </Link>
+          ))}
       </div>
     </section>
   );
