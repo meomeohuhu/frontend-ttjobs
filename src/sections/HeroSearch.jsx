@@ -1,79 +1,405 @@
-﻿const categories = [
-  "Kinh doanh/Bán hàng",
-  "Marketing/PR/Quảng cáo",
-  "Chăm sóc khách hàng (Customer Service)",
-  "Nhân sự/Hành chính/Pháp chế",
-  "Công nghệ Thông tin",
-  "Lao động phổ thông"
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { apiRequest } from "../lib/api.js";
+
+const categories = [
+  "DESIGN",
+  "MARKETING",
+  "HR",
+  "INFORMATION-TECHNOLOGY",
+  "SALES",
+  "CUSTOMER-SERVICE"
 ];
 
+const fallbackLocationGroups = [
+  {
+    code: 1,
+    province: "Hà Nội",
+    districts: ["Ba Đình", "Cầu Giấy", "Đống Đa", "Hai Bà Trưng", "Nam Từ Liêm", "Thanh Xuân"]
+  },
+  {
+    code: 79,
+    province: "TP. Hồ Chí Minh",
+    districts: ["Quận 1", "Quận 3", "Quận 7", "Bình Thạnh", "Phú Nhuận", "Tân Bình"]
+  },
+  {
+    code: 74,
+    province: "Bình Dương",
+    districts: ["Thủ Dầu Một", "Dĩ An", "Thuận An", "Bến Cát", "Tân Uyên"]
+  },
+  {
+    code: 48,
+    province: "Đà Nẵng",
+    districts: ["Hải Châu", "Thanh Khê", "Sơn Trà", "Ngũ Hành Sơn", "Liên Chiểu"]
+  }
+];
+
+const formatCategory = (value) =>
+  value
+    .toLowerCase()
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
 const HeroSearch = () => {
+  const [keyword, setKeyword] = useState("");
+  const [activeCategory, setActiveCategory] = useState("");
+  const [showCategories, setShowCategories] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [provinceQuery, setProvinceQuery] = useState("");
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState(null);
+  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [locationGroups, setLocationGroups] = useState(fallbackLocationGroups);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const searchFormRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadLocations = async () => {
+      try {
+        const response = await fetch("https://provinces.open-api.vn/api/v1/?depth=2");
+        if (!response.ok) {
+          throw new Error("Không tải được danh sách địa điểm");
+        }
+
+        const data = await response.json();
+        const mapped = Array.isArray(data)
+          ? data
+              .map((item) => ({
+                code: item?.code ?? null,
+                province: item?.name || "",
+                districts: Array.isArray(item?.districts)
+                  ? item.districts.map((district) => district?.name || "").filter(Boolean)
+                  : []
+              }))
+              .filter((item) => item.province)
+          : [];
+
+        if (active && mapped.length > 0) {
+          setLocationGroups(mapped);
+        }
+      } catch {
+        if (active) {
+          setLocationGroups(fallbackLocationGroups);
+        }
+      }
+    };
+
+    loadLocations();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      const formElement = searchFormRef.current;
+      if (!formElement) {
+        return;
+      }
+
+      if (!formElement.contains(event.target)) {
+        setShowCategories(false);
+        setShowLocationPicker(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, []);
+
+  const filteredLocationGroups = useMemo(() => {
+    const query = provinceQuery.trim().toLowerCase();
+    if (!query) {
+      return locationGroups;
+    }
+    return locationGroups.filter((group) => group.province.toLowerCase().includes(query));
+  }, [locationGroups, provinceQuery]);
+
+  const selectedLocationLabel = selectedDistrict
+    ? `${selectedDistrict}, ${selectedProvince}`
+    : selectedProvince || "Địa điểm";
+
+  const selectedProvinceEntry = useMemo(() => {
+    if (!selectedProvinceCode) {
+      return null;
+    }
+    return locationGroups.find((group) => group.code === selectedProvinceCode) || null;
+  }, [locationGroups, selectedProvinceCode]);
+
+  const runSearch = async (payload = {}) => {
+    const finalKeyword = payload.keyword ?? keyword;
+    const finalCategory = payload.category ?? activeCategory;
+    const finalLocation = payload.location ?? (selectedDistrict || selectedProvince);
+
+    const query = new URLSearchParams();
+    if (finalKeyword) query.set("keyword", finalKeyword);
+    if (finalLocation) query.set("location", finalLocation);
+    if (!finalKeyword && finalCategory) query.set("keyword", finalCategory);
+
+    setLoading(true);
+    setError("");
+    try {
+      const data = await apiRequest(`/api/jobs/search?${query.toString()}`);
+      setResults(Array.isArray(data) ? data.slice(0, 5) : []);
+    } catch (err) {
+      setError(err.message || "Không thể tìm kiếm");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setShowCategories(false);
+    setShowLocationPicker(false);
+    runSearch();
+  };
+
+  const handleCategoryClick = (value) => {
+    setActiveCategory(value);
+    runSearch({ keyword: "", category: value });
+  };
+
+  const handleProvinceSelect = async (group) => {
+    setSelectedProvince(group.province);
+    setSelectedProvinceCode(group.code);
+    setSelectedDistrict("");
+  };
+
+  const handleDistrictSelect = (district) => {
+    setSelectedDistrict(district);
+  };
+
+  const applyLocation = () => {
+    setShowLocationPicker(false);
+    if (selectedDistrict || selectedProvince) {
+      runSearch({ location: selectedDistrict || selectedProvince });
+    }
+  };
+
+  const clearLocation = () => {
+    setSelectedProvinceCode(null);
+    setSelectedProvince("");
+    setSelectedDistrict("");
+    setProvinceQuery("");
+  };
+
   return (
     <section className="hero-search">
       <div className="hero-background">
-        <div className="hero-content">
-          <h1>Tìm việc làm nhanh 24h, việc làm mới nhất trên toàn quốc</h1>
-          <p>
-            Tiếp cận 60.000+ tin tuyển dụng mỗi ngày từ hàng nghìn doanh nghiệp
-            uy tín tại Việt Nam.
-          </p>
-          <div className="search-bar">
-            <button type="button" className="search-pill">
-              <span className="search-icon menu" />
-              Danh mục nghề
-            </button>
-            <input
-              type="text"
-              placeholder="Vị trí tuyển dụng, tên công ty"
-              aria-label="Tìm kiếm vị trí tuyển dụng"
-            />
-            <div className="search-location">
-              <span className="search-icon pin" />
-              <span>Địa điểm</span>
-              <span className="caret" />
+        <div className="hero-content hero-layout">
+          <div className="hero-copy">
+            <span className="hero-kicker">TTJobs Match Engine</span>
+            <h1>Tìm đúng việc, đúng nhịp, đúng người.</h1>
+            <p>
+              TTJobs kết nối bạn với cơ hội phù hợp hơn nhờ tìm kiếm nhanh, gợi ý theo kỹ
+              năng và bộ lọc tinh gọn.
+            </p>
+
+            <form ref={searchFormRef} className="search-bar" onSubmit={handleSubmit}>
+              <div className="search-pill-wrap">
+                <button
+                  type="button"
+                  className="search-pill"
+                  onClick={() => {
+                    setShowCategories((prev) => !prev);
+                  }}
+                >
+                  <span className="search-icon menu" />
+                  {activeCategory ? formatCategory(activeCategory) : "Danh mục nghề"}
+                  <span className="caret" />
+                </button>
+                {showCategories ? (
+                  <div className="search-category-menu">
+                    {categories.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        className={item === activeCategory ? "active" : ""}
+                        onClick={() => {
+                          handleCategoryClick(item);
+                          setShowCategories(false);
+                        }}
+                      >
+                        {formatCategory(item)}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
+              <input
+                type="text"
+                placeholder="Vị trí tuyển dụng, tên công ty"
+                aria-label="Tìm kiếm vị trí tuyển dụng"
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+              />
+
+              <div className="search-location-wrap">
+                <button
+                  type="button"
+                  className="search-location-toggle"
+                  onClick={() => {
+                    setShowLocationPicker((prev) => !prev);
+                  }}
+                >
+                  <span className="search-icon pin" />
+                  <span className="search-location-label">{selectedLocationLabel}</span>
+                  <span className="caret" />
+                </button>
+
+                {showLocationPicker ? (
+                  <div className="location-picker">
+                    <div className="location-picker-head">
+                      <span>Tìm theo:</span>
+                      <button type="button" className="location-mode active">
+                        Tỉnh, Quận/huyện
+                      </button>
+                    </div>
+
+                    <div className="location-picker-search">
+                      <span className="search-icon menu" />
+                      <input
+                        type="text"
+                        placeholder="Nhập tỉnh/thành phố"
+                        value={provinceQuery}
+                        onChange={(event) => setProvinceQuery(event.target.value)}
+                      />
+                    </div>
+
+                    <div className="location-picker-body">
+                      <div className="province-list">
+                        {filteredLocationGroups.map((group) => (
+                          <button
+                            key={group.province}
+                            type="button"
+                            className={group.province === selectedProvince ? "active" : ""}
+                            onClick={() => handleProvinceSelect(group)}
+                          >
+                            {group.province}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="district-list">
+                        {selectedProvinceEntry ? (
+                          <>
+                            <div className="district-list-head">
+                              <strong>{selectedProvince}</strong>
+                              <span>Quận/huyện</span>
+                            </div>
+                            <div className="district-chips">
+                              {selectedProvinceEntry.districts.map((district) => (
+                                  <button
+                                    key={district}
+                                    type="button"
+                                    className={district === selectedDistrict ? "active" : ""}
+                                    onClick={() => handleDistrictSelect(district)}
+                                  >
+                                    {district}
+                                  </button>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="district-empty">
+                            <div className="district-empty-illustration" />
+                            <p>Vui lòng chọn Tỉnh/Thành phố</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="location-picker-footer">
+                      <button type="button" className="location-clear" onClick={clearLocation}>
+                        Bỏ chọn tất cả
+                      </button>
+                      <button type="button" className="location-apply" onClick={applyLocation}>
+                        Áp dụng
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <button type="submit" className="search-btn" disabled={loading}>
+                <span className="search-icon magnify" />
+                {loading ? "Đang tìm" : "Tìm kiếm"}
+              </button>
+            </form>
+
+            <div className="hero-chips">
+              {categories.slice(0, 4).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className="hero-chip"
+                  onClick={() => handleCategoryClick(item)}
+                >
+                  {formatCategory(item)}
+                </button>
+              ))}
             </div>
-            <button type="button" className="search-btn">
-              <span className="search-icon magnify" />
-              Tìm kiếm
-            </button>
           </div>
-          <div className="hero-grid">
-            <div className="category-card">
-              <ul>
-                {categories.map((item) => (
-                  <li key={item}>
-                    <span>{item}</span>
-                    <span className="chevron" />
-                  </li>
-                ))}
-              </ul>
-              <div className="pager">
-                <span>1/5</span>
-                <button type="button" aria-label="Trước">
-                  <span className="circle" />
-                </button>
-                <button type="button" aria-label="Sau">
-                  <span className="circle active" />
-                </button>
+
+          <div className="hero-panel">
+            <div className="hero-stat-card">
+              <div>
+                <span>Việc làm đang mở</span>
+                <strong>60.000+</strong>
+              </div>
+              <div>
+                <span>Nhà tuyển dụng</span>
+                <strong>1.800+</strong>
+              </div>
+              <div>
+                <span>Tỷ lệ phù hợp</span>
+                <strong>92%</strong>
               </div>
             </div>
-            <div className="carousel-card">
-              <div className="carousel-image">
-                <div className="carousel-badge">Ứng tuyển ngay</div>
-                <div className="carousel-text">
-                  <p>Chúng tôi đang tuyển dụng</p>
-                  <h3>CSKH - Telesales</h3>
-                  <span>9 - 25 triệu</span>
+
+            <div className="hero-spotlight">
+              <div className="carousel-badge">Đề xuất hôm nay</div>
+              <div className="carousel-text">
+                <p>Nhóm vị trí đang hot</p>
+                <h3>Product, Sales, Design</h3>
+                <span>9 - 30 triệu</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {error ? <p className="search-error">{error}</p> : null}
+
+        {results.length > 0 ? (
+          <div className="search-results">
+            <div className="results-head">
+              <strong>Kết quả gợi ý</strong>
+              <span>{results.length} việc làm</span>
+            </div>
+            {results.map((job) => (
+              <Link key={job.id} to={`/jobs/${job.id}`} className="result-item">
+                <div>
+                  <h4>{job.title}</h4>
+                  <p>{job.companyName || "Đang cập nhật"}</p>
                 </div>
-              </div>
-              <div className="carousel-dots">
-                <span className="dot active" />
-                <span className="dot" />
-                <span className="dot" />
-                <span className="dot" />
-              </div>
-            </div>
+                <span>{job.location || "Toàn quốc"}</span>
+              </Link>
+            ))}
           </div>
+        ) : null}
+
+        <div className="hero-footer-note">
+          Gợi ý theo kỹ năng, vị trí và mức lương để bạn lọc nhanh hơn.
         </div>
       </div>
     </section>
