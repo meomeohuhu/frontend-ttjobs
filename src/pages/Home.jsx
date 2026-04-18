@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+﻿import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../lib/api.js";
 import HomeHeader from "../sections/HomeHeader.jsx";
 import AnnouncementBar from "../sections/AnnouncementBar.jsx";
@@ -8,7 +7,6 @@ import BestJobsSection from "../sections/BestJobsSection.jsx";
 import HighlightJobsSection from "../sections/HighlightJobsSection.jsx";
 import BrandsSection from "../sections/BrandsSection.jsx";
 import FloatingActions from "../sections/FloatingActions.jsx";
-import { useSavedJobs } from "../hooks/useSavedJobs.js";
 
 const getSalaryValue = (job) => {
   const candidates = [job.salaryMax, job.salaryMin, job.salary];
@@ -22,11 +20,9 @@ const getSalaryValue = (job) => {
 };
 
 const Home = () => {
-  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { savedIdSet, savingIds, toggleSavedJob } = useSavedJobs();
 
   useEffect(() => {
     let active = true;
@@ -68,38 +64,16 @@ const Home = () => {
       .slice(0, 4);
   }, [jobs]);
 
-  const handleToggleSave = async (jobId) => {
-    try {
-      await toggleSavedJob(jobId);
-    } catch (err) {
-      if ((err.message || "").toLowerCase().includes("đăng nhập")) {
-        navigate("/login");
-        return;
-      }
-      setError(err.message || "Không thể lưu công việc");
-    }
-  };
-
   return (
     <div className="topcv-shell">
       <HomeHeader />
       <AnnouncementBar />
       <HeroSearch />
-      <BestJobsSection
-        jobs={bestJobs}
-        loading={loading}
-        error={error}
-        savedIdSet={savedIdSet}
-        savingIds={savingIds}
-        onToggleSave={handleToggleSave}
-      />
+      <BestJobsSection jobs={bestJobs} loading={loading} error={error} />
       <HighlightJobsSection
         jobs={highSalaryJobs}
         loading={loading}
         error={error}
-        savedIdSet={savedIdSet}
-        savingIds={savingIds}
-        onToggleSave={handleToggleSave}
       />
       <BrandsSection />
       <FloatingActions />

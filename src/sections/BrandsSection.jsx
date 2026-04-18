@@ -1,44 +1,44 @@
-const tabs = [
+﻿const tabs = [
   "Tất cả",
-  "Sản phẩm",
-  "Marketing",
-  "Sales",
+  "Ngân hàng",
+  "Bất động sản",
+  "Xây dựng",
   "IT - Phần mềm",
   "Tài chính",
-  "Sản xuất",
-  "Dịch vụ"
+  "Bán lẻ - FMCG",
+  "Sản xuất"
 ];
 
 const brands = [
   {
-    name: "CÔNG TY CỔ PHẦN GDC",
-    sector: "Xây dựng",
-    jobs: "36 việc làm"
-  },
-  {
-    name: "DELTA GROUP",
-    sector: "Xây dựng",
-    jobs: "12 việc làm"
-  },
-  {
-    name: "VIVU MEDIA",
-    sector: "Giải trí",
-    jobs: "9 việc làm"
-  },
-  {
-    name: "TÍN VIỆT FINANCE",
-    sector: "Tài chính",
-    jobs: "18 việc làm"
-  },
-  {
-    name: "VIETTEL POST",
+    name: "CHI NHÁNH BƯU CHÍNH VIETTEL NINH BÌNH",
     sector: "Viễn thông",
     jobs: "3 việc làm"
   },
   {
-    name: "NSN CONSTRUCTION",
+    name: "CÔNG TY CỔ PHẦN TẬP ĐOÀN GDC",
+    sector: "Xây dựng",
+    jobs: "36 việc làm"
+  },
+  {
+    name: "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ CÔNG NGHIỆP NSN",
     sector: "Xây dựng",
     jobs: "15 việc làm"
+  },
+  {
+    name: "CÔNG TY TNHH TẬP ĐOÀN XÂY DỰNG DELTA",
+    sector: "Xây dựng",
+    jobs: "12 việc làm"
+  },
+  {
+    name: "CÔNG TY CỔ PHẦN DỊCH VỤ GIẢI TRÍ HÀ NỘI",
+    sector: "Giải trí",
+    jobs: "9 việc làm"
+  },
+  {
+    name: "CÔNG TY TÀI CHÍNH TỔNG HỢP CỔ PHẦN TÍN VIỆT",
+    sector: "Tài chính",
+    jobs: "18 việc làm"
   }
 ];
 
@@ -47,10 +47,10 @@ const BrandsSection = () => {
     <section className="brands-section">
       <div className="brands-hero">
         <div>
-          <h2>Thương hiệu đang tuyển nổi bật</h2>
-          <p>Những doanh nghiệp đang tuyển dụng tích cực trên TTJobs</p>
+          <h2>Thương hiệu lớn tiêu biểu</h2>
+          <p>Hàng trăm thương hiệu lớn tiêu biểu đang tuyển dụng trên TopCV Pro</p>
         </div>
-        <span className="pro-pill">TTJobs Select</span>
+        <span className="pro-pill">Pro Company</span>
       </div>
 
       <div className="brand-tabs">
@@ -75,11 +75,11 @@ const BrandsSection = () => {
 
       <div className="brands-grid">
         <div className="brand-feature">
-          <div className="feature-logo">T</div>
-          <h3>TTJobs Select</h3>
-          <p>Top thương hiệu</p>
+          <div className="feature-logo">S</div>
+          <h3>Shinhan Finance</h3>
+          <p>Tài chính</p>
           <span className="jobs-count">22 việc làm</span>
-          <span className="pro-pill">Curated</span>
+          <span className="pro-pill">Pro Company</span>
           <button type="button">+ Theo dõi</button>
         </div>
         <div className="brand-cards">

@@ -6,12 +6,8 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Home from "./pages/Home.jsx";
 import JobDetail from "./pages/JobDetail.jsx";
-import SavedJobs from "./pages/user/SavedJobs.jsx";
-import AppliedJobs from "./pages/user/AppliedJobs.jsx";
-import MatchingJobs from "./pages/user/MatchingJobs.jsx";
-import ProfileSettings from "./pages/user/ProfileSettings.jsx";
-import PasswordSettings from "./pages/user/PasswordSettings.jsx";
-import NotificationSettings from "./pages/user/NotificationSettings.jsx";
+import CreateCV from "./pages/CreateCV.jsx";
+import CareerGuide from "./pages/CareerGuide.jsx";
 
 const root = createRoot(document.getElementById("root"));
 root.render(
@@ -20,12 +16,8 @@ root.render(
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
-        <Route path="/user/saved" element={<SavedJobs />} />
-        <Route path="/user/applied" element={<AppliedJobs />} />
-        <Route path="/user/matching" element={<MatchingJobs />} />
-        <Route path="/user/profile" element={<ProfileSettings />} />
-        <Route path="/user/password" element={<PasswordSettings />} />
-        <Route path="/user/notifications" element={<NotificationSettings />} />
+        <Route path="/create-cv" element={<CreateCV />} />
+        <Route path="/career-guide" element={<CareerGuide />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Routes>

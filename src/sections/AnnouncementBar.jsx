@@ -1,16 +1,15 @@
-const AnnouncementBar = () => {
+﻿const AnnouncementBar = () => {
   return (
     <section className="announcement-bar">
       <div className="announcement-inner">
         <div className="announcement-left">
           <div className="announcement-avatar" />
-          <div>
-            <strong>TTJobs Match</strong>
-            <p>Chia sẻ nhu cầu việc làm để nhận gợi ý sát hơn mỗi ngày</p>
-          </div>
+          <p>
+            Hãy chia sẻ nhu cầu công việc để nhận gợi ý việc làm tốt nhất
+          </p>
         </div>
         <button className="announcement-btn" type="button">
-          Cập nhật nhu cầu
+          Cập nhật nhu cầu công việc
           <span className="arrow" />
         </button>
       </div>
