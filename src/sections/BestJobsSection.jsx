@@ -1,4 +1,4 @@
-﻿import { Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 
 const filters = [
@@ -56,7 +56,14 @@ const filterJobsByRegion = (jobs, region) => {
   );
 };
 
-const BestJobsSection = ({ jobs, loading, error }) => {
+const BestJobsSection = ({
+  jobs,
+  loading,
+  error,
+  savedIdSet,
+  savingIds,
+  onToggleSave,
+}) => {
   const [activeRegion, setActiveRegion] = useState(filters[0]);
 
   const filteredJobs = useMemo(
@@ -127,32 +134,48 @@ const BestJobsSection = ({ jobs, loading, error }) => {
         )}
         {!loading &&
           !error &&
-          filteredJobs.map((job) => (
-            <Link
-              to={`/jobs/${job.id}`}
-              className="job-card"
-              key={job.id ?? job.title}
-            >
-              <div className="job-logo">
-                {job.companyLogoUrl ? (
-                  <img src={job.companyLogoUrl} alt={job.companyName || "Logo"} />
-                ) : (
-                  <span>{(job.companyName || "C")[0]}</span>
-                )}
+          filteredJobs.map((job) => {
+            const isSaved = savedIdSet?.has(job.id);
+            const isSaving = savingIds?.includes(job.id);
+
+            return (
+              <div className="job-card" key={job.id ?? job.title}>
+                <Link to={`/jobs/${job.id}`} className="job-card-link">
+                  <div className="job-logo">
+                    {job.companyLogoUrl ? (
+                      <img
+                        src={job.companyLogoUrl}
+                        alt={job.companyName || "Logo"}
+                      />
+                    ) : (
+                      <span>{(job.companyName || "C")[0]}</span>
+                    )}
+                  </div>
+                  <div className="job-info">
+                    <h3>{job.title}</h3>
+                    <p>{job.companyName || "Đang cập nhật"}</p>
+                    <div className="job-meta">
+                      <span>{formatSalary(job)}</span>
+                      <span>{job.location || "Toàn quốc"}</span>
+                    </div>
+                  </div>
+                </Link>
+                <button
+                  className={`heart-btn ${isSaved ? "saved" : ""}`}
+                  type="button"
+                  aria-label={isSaved ? "Bỏ lưu" : "Lưu"}
+                  disabled={isSaving}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onToggleSave?.(job.id);
+                  }}
+                >
+                  <span />
+                </button>
               </div>
-              <div className="job-info">
-                <h3>{job.title}</h3>
-                <p>{job.companyName || "Đang cập nhật"}</p>
-                <div className="job-meta">
-                  <span>{formatSalary(job)}</span>
-                  <span>{job.location || "Toàn quốc"}</span>
-                </div>
-              </div>
-              <button className="heart-btn" type="button" aria-label="Lưu">
-                <span />
-              </button>
-            </Link>
-          ))}
+            );
+          })}
       </div>
     </section>
   );
