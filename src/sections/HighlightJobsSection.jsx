@@ -1,6 +1,4 @@
-import { Link } from "react-router-dom";
-
-const formatNumber = (value) => {
+﻿const formatNumber = (value) => {
   const numberValue = Number(value);
   if (!Number.isFinite(numberValue) || numberValue <= 0) {
     return "";
@@ -23,7 +21,9 @@ const formatSalary = (job) => {
   return "Thỏa thuận";
 };
 
-const HighlightJobsSection = ({ jobs, loading, error, savedIdSet, savingIds, onToggleSave }) => {
+import { Link } from "react-router-dom";
+
+const HighlightJobsSection = ({ jobs, loading, error }) => {
   return (
     <section className="highlight-jobs">
       <div className="highlight-header">
@@ -50,45 +50,32 @@ const HighlightJobsSection = ({ jobs, loading, error, savedIdSet, savingIds, onT
           {!loading && error && <p>{error}</p>}
           {!loading &&
             !error &&
-            jobs.map((job) => {
-              const isSaved = savedIdSet?.has(job.id);
-              const isSaving = savingIds?.includes(job.id);
-
-              return (
-                <div className="job-card" key={job.id ?? job.title}>
-                  <Link to={`/jobs/${job.id}`} className="job-card-link">
-                    <div className="job-logo">
-                      {job.companyLogoUrl ? (
-                        <img src={job.companyLogoUrl} alt={job.companyName || "Logo"} />
-                      ) : (
-                        <span>{(job.companyName || "C")[0]}</span>
-                      )}
-                    </div>
-                    <div className="job-info">
-                      <h3>{job.title}</h3>
-                      <p>{job.companyName || "Đang cập nhật"}</p>
-                      <div className="job-meta">
-                        <span>{formatSalary(job)}</span>
-                        <span>{job.location || "Toàn quốc"}</span>
-                      </div>
-                    </div>
-                  </Link>
-                  <button
-                    className={`heart-btn ${isSaved ? "saved" : ""}`}
-                    type="button"
-                    aria-label={isSaved ? "Bỏ lưu" : "Lưu"}
-                    disabled={isSaving}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      onToggleSave?.(job.id);
-                    }}
-                  >
-                    <span />
-                  </button>
+            jobs.map((job) => (
+              <Link
+                to={`/jobs/${job.id}`}
+                className="job-card"
+                key={job.id ?? job.title}
+              >
+                <div className="job-logo">
+                  {job.companyLogoUrl ? (
+                    <img src={job.companyLogoUrl} alt={job.companyName || "Logo"} />
+                  ) : (
+                    <span>{(job.companyName || "C")[0]}</span>
+                  )}
                 </div>
-              );
-            })}
+                <div className="job-info">
+                  <h3>{job.title}</h3>
+                  <p>{job.companyName || "Đang cập nhật"}</p>
+                  <div className="job-meta">
+                    <span>{formatSalary(job)}</span>
+                    <span>{job.location || "Toàn quốc"}</span>
+                  </div>
+                </div>
+                <button className="heart-btn" type="button" aria-label="Lưu">
+                  <span />
+                </button>
+              </Link>
+            ))}
         </div>
         <aside className="highlight-banner">
           <div className="banner-glow" />

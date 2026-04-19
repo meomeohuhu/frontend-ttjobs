@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+﻿import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
 import HomeHeader from "../sections/HomeHeader.jsx";
 import AnnouncementBar from "../sections/AnnouncementBar.jsx";
 import FloatingActions from "../sections/FloatingActions.jsx";
-import { useSavedJobs } from "../hooks/useSavedJobs.js";
 
 const formatNumber = (value) => {
   const numberValue = Number(value);
@@ -31,13 +30,11 @@ const formatSalary = (job) => {
 };
 
 const JobDetail = () => {
-  const navigate = useNavigate();
   const { id } = useParams();
   const [job, setJob] = useState(null);
   const [relatedJobs, setRelatedJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { savedIdSet, savingIds, toggleSavedJob } = useSavedJobs();
 
   useEffect(() => {
     let active = true;
@@ -83,22 +80,6 @@ const JobDetail = () => {
     return job.description;
   }, [job]);
 
-  const handleToggleSave = async () => {
-    if (!job?.id) return;
-    try {
-      await toggleSavedJob(job.id);
-    } catch (err) {
-      if ((err.message || "").toLowerCase().includes("đăng nhập")) {
-        navigate("/login");
-        return;
-      }
-      setError(err.message || "Không thể lưu công việc");
-    }
-  };
-
-  const isSaved = Boolean(job?.id && savedIdSet?.has(job.id));
-  const isSaving = Boolean(job?.id && savingIds?.includes(job.id));
-
   return (
     <div className="job-detail-shell">
       <HomeHeader />
@@ -142,13 +123,8 @@ const JobDetail = () => {
                   <button type="button" className="apply-btn">
                     Ứng tuyển ngay
                   </button>
-                  <button
-                    type="button"
-                    className={`save-btn ${isSaved ? "saved" : ""}`}
-                    disabled={isSaving}
-                    onClick={handleToggleSave}
-                  >
-                    {isSaved ? "Đã lưu" : "Lưu tin"}
+                  <button type="button" className="save-btn">
+                    Lưu tin
                   </button>
                 </div>
               </div>
