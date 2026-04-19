@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
 
-const navItems = ["Việc làm", "Hồ sơ", "Công cụ", "Cẩm nang", "TTJobs Pro"];
+const navItems = ["Việc làm", "Hồ sơ", "Công cụ", "Cẩm nang", "TTJobs"];
 
 const menuSections = [
   {
@@ -119,6 +119,8 @@ const HomeHeader = () => {
   const accountEmail = profile?.email || "Đang tải...";
   const accountId = profile?.id ? `ID ${profile.id}` : "ID --";
   const avatarLabel = (accountName || "U").trim().charAt(0).toUpperCase();
+  const role = String(profile?.role || "").toUpperCase();
+  const isRecruiterRole = role === "RECRUITER" || role === "ADMIN";
 
   const handleLogout = () => {
     localStorage.removeItem("ttjobs_token");
@@ -264,8 +266,17 @@ const HomeHeader = () => {
         </div>
 
         <div className="recruiter-link">
-          <span>Bạn là nhà tuyển dụng?</span>
-          <Link to="/register">Đăng tuyển ngay</Link>
+          {isRecruiterRole ? (
+            <>
+              <span>Workspace tuyển dụng</span>
+              <Link to="/recruiter/dashboard">Mở dashboard</Link>
+            </>
+          ) : (
+            <>
+              <span>Bạn là nhà tuyển dụng?</span>
+              <Link to="/register">Đăng tuyển ngay</Link>
+            </>
+          )}
         </div>
       </div>
     </header>

@@ -40,6 +40,14 @@ const formatCategory = (value) =>
     .replace(/-/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
+const formatCount = (value) => {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue) || numberValue < 0) {
+    return "";
+  }
+  return numberValue.toLocaleString("vi-VN");
+};
+
 const HeroSearch = () => {
   const [keyword, setKeyword] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
@@ -53,7 +61,16 @@ const HeroSearch = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [openJobsCount, setOpenJobsCount] = useState("60.000+");
+  const [employerCount, setEmployerCount] = useState("1.800+");
+  const [hotPositions, setHotPositions] = useState([
+    { title: "Java Backend Developer", count: 18 },
+    { title: "Sales Executive", count: 14 },
+    { title: "UI/UX Designer", count: 11 }
+  ]);
+  const [activeHotIndex, setActiveHotIndex] = useState(0);
   const searchFormRef = useRef(null);
+  const searchResultsRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -88,12 +105,66 @@ const HeroSearch = () => {
       }
     };
 
+    const loadHeroStats = async () => {
+      try {
+        const [jobsResult, companiesResult] = await Promise.allSettled([
+          apiRequest("/api/jobs"),
+          apiRequest("/api/companies")
+        ]);
+
+        if (!active) {
+          return;
+        }
+
+        if (jobsResult.status === "fulfilled" && Array.isArray(jobsResult.value)) {
+          const openJobs = jobsResult.value.filter((job) => (job?.status || "").toLowerCase() === "open");
+          setOpenJobsCount(formatCount(openJobs.length) || "60.000+");
+
+          const rankedPositions = [...jobsResult.value]
+            .sort((left, right) => Number(right?.savedCount || 0) - Number(left?.savedCount || 0))
+            .filter((job) => job?.title)
+            .slice(0, 3)
+            .map((job) => ({
+              title: job.title,
+              count: Number(job.savedCount || 0)
+            }));
+
+          if (rankedPositions.length > 0) {
+            setHotPositions(rankedPositions);
+          }
+        }
+
+        if (companiesResult.status === "fulfilled" && Array.isArray(companiesResult.value)) {
+          setEmployerCount(formatCount(companiesResult.value.length) || "1.800+");
+        }
+      } catch {
+        if (!active) {
+          return;
+        }
+      }
+    };
+
     loadLocations();
+    loadHeroStats();
 
     return () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (hotPositions.length <= 1) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setActiveHotIndex((currentIndex) => (currentIndex + 1) % hotPositions.length);
+    }, 4500);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [hotPositions.length]);
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -134,7 +205,19 @@ const HeroSearch = () => {
     return locationGroups.find((group) => group.code === selectedProvinceCode) || null;
   }, [locationGroups, selectedProvinceCode]);
 
-  const runSearch = async (payload = {}) => {
+  const hotSlides = hotPositions.length > 0 ? hotPositions : [{ title: "Java Backend Developer", count: 18 }];
+
+  const goToHotSlide = (nextIndex) => {
+    const total = hotSlides.length;
+    if (total === 0) {
+      return;
+    }
+    const normalizedIndex = ((nextIndex % total) + total) % total;
+    setActiveHotIndex(normalizedIndex);
+  };
+
+  const runSearch = async (payload = {}, options = {}) => {
+    const { scrollToResults = false } = options;
     const finalKeyword = payload.keyword ?? keyword;
     const finalCategory = payload.category ?? activeCategory;
     const finalLocation = payload.location ?? (selectedDistrict || selectedProvince);
@@ -153,6 +236,11 @@ const HeroSearch = () => {
       setError(err.message || "Không thể tìm kiếm");
     } finally {
       setLoading(false);
+      if (scrollToResults) {
+        window.requestAnimationFrame(() => {
+          searchResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
     }
   };
 
@@ -200,8 +288,8 @@ const HeroSearch = () => {
             <span className="hero-kicker">TTJobs Match Engine</span>
             <h1>Tìm đúng việc, đúng nhịp, đúng người.</h1>
             <p>
-              TTJobs kết nối bạn với cơ hội phù hợp hơn nhờ tìm kiếm nhanh, gợi ý theo kỹ
-              năng và bộ lọc tinh gọn.
+              TTJobs kết nối bạn với cơ hội phù hợp hơn nhờ tìm kiếm nhanh, gợi ý theo kỹ năng và bộ
+              lọc tinh gọn.
             </p>
 
             <form ref={searchFormRef} className="search-bar" onSubmit={handleSubmit}>
@@ -299,14 +387,14 @@ const HeroSearch = () => {
                             </div>
                             <div className="district-chips">
                               {selectedProvinceEntry.districts.map((district) => (
-                                  <button
-                                    key={district}
-                                    type="button"
-                                    className={district === selectedDistrict ? "active" : ""}
-                                    onClick={() => handleDistrictSelect(district)}
-                                  >
-                                    {district}
-                                  </button>
+                                <button
+                                  key={district}
+                                  type="button"
+                                  className={district === selectedDistrict ? "active" : ""}
+                                  onClick={() => handleDistrictSelect(district)}
+                                >
+                                  {district}
+                                </button>
                               ))}
                             </div>
                           </>
@@ -355,11 +443,11 @@ const HeroSearch = () => {
             <div className="hero-stat-card">
               <div>
                 <span>Việc làm đang mở</span>
-                <strong>60.000+</strong>
+                <strong>{openJobsCount}</strong>
               </div>
               <div>
                 <span>Nhà tuyển dụng</span>
-                <strong>1.800+</strong>
+                <strong>{employerCount}</strong>
               </div>
               <div>
                 <span>Tỷ lệ phù hợp</span>
@@ -369,10 +457,61 @@ const HeroSearch = () => {
 
             <div className="hero-spotlight">
               <div className="carousel-badge">Đề xuất hôm nay</div>
-              <div className="carousel-text">
-                <p>Nhóm vị trí đang hot</p>
-                <h3>Product, Sales, Design</h3>
-                <span>9 - 30 triệu</span>
+              <div className="hot-slider">
+                <button
+                  type="button"
+                  className="hot-slider-arrow"
+                  onClick={() => goToHotSlide(activeHotIndex - 1)}
+                  aria-label="Vị trí trước"
+                >
+                  <span />
+                </button>
+
+                <div className="hot-slider-viewport">
+                  <div
+                    className="hot-slider-track"
+                    style={{ transform: `translateX(-${activeHotIndex * 100}%)` }}
+                  >
+                    {hotSlides.map((item, index) => (
+                      <button
+                        type="button"
+                        className="hot-slide hot-slide-button"
+                        key={`${item.title}-${index}`}
+                        onClick={() => {
+                          setKeyword(item.title);
+                          setActiveCategory("");
+                          runSearch({ keyword: item.title }, { scrollToResults: true });
+                        }}
+                        aria-label={`Tìm việc cho nhóm vị trí ${item.title}`}
+                      >
+                        <p>Nhóm vị trí đang hot</p>
+                        <h3>{item.title}</h3>
+                        <span>{item.count} lượt lưu công việc</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="hot-slider-arrow"
+                  onClick={() => goToHotSlide(activeHotIndex + 1)}
+                  aria-label="Vị trí sau"
+                >
+                  <span />
+                </button>
+              </div>
+
+              <div className="hot-slider-dots" aria-label="Chỉ báo vị trí hot">
+                {hotSlides.map((item, index) => (
+                  <button
+                    key={`${item.title}-dot-${index}`}
+                    type="button"
+                    className={index === activeHotIndex ? "active" : ""}
+                    onClick={() => goToHotSlide(index)}
+                    aria-label={`Chuyển tới ${item.title}`}
+                  />
+                ))}
               </div>
             </div>
           </div>
@@ -381,7 +520,7 @@ const HeroSearch = () => {
         {error ? <p className="search-error">{error}</p> : null}
 
         {results.length > 0 ? (
-          <div className="search-results">
+          <div className="search-results" ref={searchResultsRef}>
             <div className="results-head">
               <strong>Kết quả gợi ý</strong>
               <span>{results.length} việc làm</span>
