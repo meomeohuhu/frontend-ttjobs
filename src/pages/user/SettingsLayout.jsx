@@ -5,6 +5,7 @@ import FloatingActions from "../../sections/FloatingActions.jsx";
 
 const settingsNav = [
   { label: "Thông tin cá nhân", to: "/user/profile" },
+  { label: "Nhu cầu công việc", to: "/user/job-needs" },
   { label: "Đổi mật khẩu", to: "/user/password" },
   { label: "Thông báo", to: "/user/notifications" }
 ];
@@ -22,8 +23,8 @@ const SettingsLayout = ({ title, description, activePath, children, aside }) => 
               <p className="settings-sidebar-kicker">Cài đặt tài khoản</p>
               <h2>Quản lý hồ sơ</h2>
               <p>
-                Chỉnh sửa thông tin cá nhân, cập nhật bảo mật và cấu hình thông báo cho
-                tài khoản TTJobs của bạn.
+                Chỉnh sửa thông tin cá nhân, cập nhật bảo mật và cấu hình thông báo cho tài khoản
+                TTJobs của bạn.
               </p>
             </div>
 

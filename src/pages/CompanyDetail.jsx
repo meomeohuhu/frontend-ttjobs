@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
 import HomeHeader from "../sections/HomeHeader.jsx";
 import FloatingActions from "../sections/FloatingActions.jsx";
+import Footer from "../sections/Footer.jsx";
 
 const FALLBACK_LOCATION_GROUPS = [
   {
@@ -610,6 +611,7 @@ const CompanyDetail = () => {
       </div>
 
       <FloatingActions />
+      <Footer />
     </div>
   );
 };

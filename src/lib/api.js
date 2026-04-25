@@ -2,13 +2,24 @@ export const API_BASE_URL = "http://localhost:8080";
 
 export async function apiRequest(path, options = {}) {
   const token = localStorage.getItem("ttjobs_token");
+  const headers = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {})
+  };
+
+  // Only set default JSON content type if not explicitely overridden or if it's not a FormData body
+  if (!headers["Content-Type"] && !(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // If headers["Content-Type"] is explicitly set to null/empty string from options, remove it
+  if (headers["Content-Type"] === "" || headers["Content-Type"] === null) {
+    delete headers["Content-Type"];
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {})
-    },
-    ...options
+    ...options,
+    headers
   });
 
   if (!response.ok) {

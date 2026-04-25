@@ -8,6 +8,7 @@ import BestJobsSection from "../sections/BestJobsSection.jsx";
 import HighlightJobsSection from "../sections/HighlightJobsSection.jsx";
 import BrandsSection from "../sections/BrandsSection.jsx";
 import FloatingActions from "../sections/FloatingActions.jsx";
+import Footer from "../sections/Footer.jsx";
 import { useSavedJobs } from "../hooks/useSavedJobs.js";
 
 const getSalaryValue = (job) => {
@@ -103,6 +104,7 @@ const Home = () => {
       />
       <BrandsSection />
       <FloatingActions />
+      <Footer />
     </div>
   );
 };

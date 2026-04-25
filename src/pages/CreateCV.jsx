@@ -1,24 +1,129 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HomeHeader from "../sections/HomeHeader.jsx";
 import Footer from "../sections/Footer.jsx";
 import { Link } from "react-router-dom";
 import FloatingActions from "../sections/FloatingActions.jsx";
+import { cvService } from "../services/cvService.js";
+
 const CreateCV = () => {
   const [template, setTemplate] = useState("IT");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState(null);
   const [form, setForm] = useState({
-    name: "Nguyễn Văn A",
-    role: "Nhân viên IT",
-    email: "nguyenvana@example.com",
-    phone: "090 123 4567",
-    objective:
-      "Tìm kiếm vị trí phát triển phần mềm front-end trong môi trường năng động, sáng tạo.",
-    experience:
-      "5 năm kinh nghiệm phát triển ứng dụng web với React, Node.js và hệ sinh thái JavaScript.",
-    skills: "React, JavaScript, TypeScript, HTML/CSS, Git, Agile",
+    name: "",
+    role: "",
+    email: "",
+    phone: "",
+    objective: "",
+    experience: "",
+    skills: "",
+    cvUrl: null,
   });
+
+  useEffect(() => {
+    // Cleanup preview URL on unmount
+    return () => {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    };
+  }, [localPreviewUrl]);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        setLoading(true);
+        const data = await cvService.getMyCvProfile();
+        setForm({
+          name: data.name || "",
+          role: data.cvRole || "",
+          email: data.email || "",
+          phone: data.phone || "",
+          objective: data.cvObjective || "",
+          experience: data.cvExperienceHighlights || "",
+          skills: data.skills ? data.skills.join(", ") : "",
+          cvUrl: data.cvUrl || null,
+        });
+      } catch (err) {
+        console.error("Failed to load profile:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProfile();
+  }, []);
 
   const handleChange = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const handleSave = async (e) => {
+    if (e) e.preventDefault();
+    setSuccess("");
+    setError("");
+    setLoading(true);
+
+    try {
+      const skillsArray = form.skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s !== "");
+
+      await cvService.updateCvProfile({
+        name: form.name,
+        phone: form.phone,
+        cvRole: form.role,
+        cvObjective: form.objective,
+        cvExperienceHighlights: form.experience,
+        skills: skillsArray,
+      });
+      setSuccess("Đã lưu thông tin CV thành công!");
+    } catch (err) {
+      setError(err.message || "Không thể lưu thông tin");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    
+    // If it's a PDF or Image, we can create a local preview URL
+    if (file.type === "application/pdf" || file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setLocalPreviewUrl(url);
+    } else {
+      setLocalPreviewUrl(null);
+    }
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!selectedFile) return;
+
+    setSuccess("");
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await cvService.uploadCvFile(selectedFile);
+      setForm((prev) => ({ ...prev, cvUrl: data.cvUrl }));
+      setSuccess("Đã tải CV lên Cloudinary thành công!");
+      setSelectedFile(null);
+      setLocalPreviewUrl(null);
+    } catch (err) {
+      setError(err.message || "Tải file thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelSelection = () => {
+    setSelectedFile(null);
+    setLocalPreviewUrl(null);
   };
 
   return (
@@ -87,7 +192,7 @@ const CreateCV = () => {
         <section className="create-cv-stage">
           <div className="create-cv-grid">
             <div className="page-card form-card">
-              <div className="form-header">
+               <div className="form-header">
                 <span className="feature-pill">Nhập thông tin CV</span>
                 <h2>Điền nhanh, xem trước và xuất CV ngay.</h2>
                 <p>
@@ -95,6 +200,10 @@ const CreateCV = () => {
                   năng ngay trên cùng một giao diện.
                 </p>
               </div>
+
+              {error && <div className="form-alert error">{error}</div>}
+              {success && <div className="form-alert success">{success}</div>}
+              {loading && <div className="form-alert info">Đang xử lý...</div>}
 
               <div className="form-field">
                 <label>Họ và tên</label>
@@ -119,12 +228,12 @@ const CreateCV = () => {
               </div>
 
               <div className="form-field">
-                <label>Email</label>
+                <label>Email (Không thể thay đổi)</label>
                 <div className="input-wrap">
                   <input
                     type="email"
                     value={form.email}
-                    onChange={handleChange("email")}
+                    disabled
                   />
                 </div>
               </div>
@@ -161,7 +270,7 @@ const CreateCV = () => {
               </div>
 
               <div className="form-field">
-                <label>Kỹ năng chính</label>
+                <label>Kỹ năng chính (Phân cách bằng dấu phẩy)</label>
                 <div className="input-wrap">
                   <input
                     type="text"
@@ -172,12 +281,85 @@ const CreateCV = () => {
               </div>
 
               <div className="page-actions">
-                <button className="primary-btn" type="button">
-                  Xem trước CV
+                <button 
+                  className="primary-btn" 
+                  type="button" 
+                  onClick={handleSave}
+                  disabled={loading}
+                >
+                  {loading ? "Đang lưu..." : "Lưu thông tin CV"}
                 </button>
-                <button className="ghost-btn" type="button">
-                  Tải xuống PDF
-                </button>
+              </div>
+
+              <div className="upload-section" style={{ marginTop: "32px", paddingTop: "24px", borderTop: "1px dashed #e2e8f0" }}>
+                <span className="feature-pill">Hoặc tải file từ máy tính</span>
+                <h3>Tải lên CV có sẵn</h3>
+                <p style={{ fontSize: "14px", color: "#64748b", margin: "8px 0 16px" }}>
+                  Hệ thống hỗ trợ định dạng PDF, DOC, DOCX (Tối đa 5MB)
+                </p>
+                
+                <div className="upload-box" style={{ position: "relative" }}>
+                  {!selectedFile ? (
+                    <>
+                      <input
+                        type="file"
+                        id="cv-upload-input"
+                        hidden
+                        accept=".pdf,.doc,.docx,image/*"
+                        onChange={handleFileSelect}
+                      />
+                      <label 
+                        htmlFor="cv-upload-input" 
+                        className="ghost-btn"
+                        style={{ width: "100%", justifyContent: "center", cursor: "pointer", border: "2px dashed #cbd5e1" }}
+                      >
+                        Chọn file từ máy tính
+                      </label>
+                    </>
+                  ) : (
+                    <div className="preview-container" style={{ padding: "16px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <span style={{ fontSize: "14px", fontWeight: "600" }}>📄 {selectedFile.name}</span>
+                        <button onClick={cancelSelection} className="ghost-btn" style={{ padding: "4px 8px", fontSize: "12px", color: "#ef4444" }}>Hủy</button>
+                      </div>
+
+                      {localPreviewUrl && selectedFile.type === "application/pdf" && (
+                        <iframe 
+                          src={localPreviewUrl} 
+                          style={{ width: "100%", height: "300px", border: "1px solid #e2e8f0", borderRadius: "8px", marginBottom: "12px" }} 
+                          title="Local PDF Preview"
+                        />
+                      )}
+
+                      {localPreviewUrl && selectedFile.type.startsWith("image/") && (
+                        <img 
+                          src={localPreviewUrl} 
+                          alt="Local Preview" 
+                          style={{ width: "100%", maxHeight: "300px", objectFit: "contain", borderRadius: "8px", marginBottom: "12px" }} 
+                        />
+                      )}
+
+                      <button 
+                        className="primary-btn" 
+                        style={{ width: "100%", margin: 0 }}
+                        onClick={handleConfirmUpload}
+                        disabled={loading}
+                      >
+                        {loading ? "Đang tải lên..." : "Xác nhận tải lên Cloudinary"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {form.cvUrl && !selectedFile && (
+                  <div style={{ marginTop: "16px", padding: "12px", background: "#f0fdf4", borderRadius: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ fontSize: "18px" }}>✅</span>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#166534" }}>CV của bạn hiện đang ở trên hệ thống</p>
+                      <a href={form.cvUrl} target="_blank" rel="noreferrer" style={{ fontSize: "12px", color: "#15803d" }}>Xem CV trên Cloudinary</a>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

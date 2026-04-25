@@ -1,17 +1,17 @@
-﻿const AnnouncementBar = () => {
+import { Link } from "react-router-dom";
+
+const AnnouncementBar = () => {
   return (
     <section className="announcement-bar">
       <div className="announcement-inner">
         <div className="announcement-left">
           <div className="announcement-avatar" />
-          <p>
-            Hãy chia sẻ nhu cầu công việc để nhận gợi ý việc làm tốt nhất
-          </p>
+          <p>Hãy chia sẻ nhu cầu công việc để nhận gợi ý việc làm tốt nhất</p>
         </div>
-        <button className="announcement-btn" type="button">
+        <Link className="announcement-btn" to="/user/job-needs">
           Cập nhật nhu cầu công việc
           <span className="arrow" />
-        </button>
+        </Link>
       </div>
     </section>
   );

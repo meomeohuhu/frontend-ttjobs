@@ -7,8 +7,25 @@ import Register from "./pages/Register.jsx";
 import Home from "./pages/Home.jsx";
 import JobDetail from "./pages/JobDetail.jsx";
 import CompanyDetail from "./pages/CompanyDetail.jsx";
+import CareerGuide from "./pages/CareerGuide.jsx";
 import RecruiterDashboard from "./pages/recruiter/RecruiterDashboard.jsx";
+import RecruiterHistory from "./pages/recruiter/RecruiterHistory.jsx";
+import RecruiterChat from "./pages/recruiter/RecruiterChat.jsx";
+import RecruiterNotifications from "./pages/recruiter/RecruiterNotifications.jsx";
+import RecruiterCompanies from "./pages/recruiter/RecruiterCompanies.jsx";
+import RecruiterJobs from "./pages/recruiter/RecruiterJobs.jsx";
+import RecruiterApplications from "./pages/recruiter/RecruiterApplications.jsx";
+import MessagesPage from "./pages/user/Messages.jsx";
 import RoleGate from "./components/RoleGate.jsx";
+
+import ProfileSettings from "./pages/user/ProfileSettings.jsx";
+import PasswordSettings from "./pages/user/PasswordSettings.jsx";
+import NotificationSettings from "./pages/user/NotificationSettings.jsx";
+import JobNeedsSettings from "./pages/user/JobNeedsSettings.jsx";
+import SavedJobs from "./pages/user/SavedJobs.jsx";
+import AppliedJobs from "./pages/user/AppliedJobs.jsx";
+import MatchingJobs from "./pages/user/MatchingJobs.jsx";
+import CreateCV from "./pages/CreateCV.jsx";
 
 const root = createRoot(document.getElementById("root"));
 const recruiterRoles = ["RECRUITER", "ADMIN"];
@@ -18,12 +35,86 @@ root.render(
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
+        <Route path="/create-cv" element={<CreateCV />} />
+        <Route path="/career-guide" element={<CareerGuide />} />
+        <Route path="/career-guide/:slug" element={<CareerGuide />} />
         <Route path="/companies/:id" element={<CompanyDetail />} />
+        <Route path="/user/saved" element={<SavedJobs />} />
+        <Route path="/user/applied" element={<AppliedJobs />} />
+        <Route path="/user/matching" element={<MatchingJobs />} />
+        <Route path="/user/profile" element={<ProfileSettings />} />
+        <Route path="/user/password" element={<PasswordSettings />} />
+        <Route path="/user/notifications" element={<NotificationSettings />} />
+        <Route path="/user/job-needs" element={<JobNeedsSettings />} />
+        <Route
+          path="/messages"
+          element={
+            <RoleGate allowedRoles={["CANDIDATE"]}>
+              <MessagesPage />
+            </RoleGate>
+          }
+        />
         <Route
           path="/recruiter/dashboard"
           element={
             <RoleGate allowedRoles={recruiterRoles}>
               <RecruiterDashboard />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/recruiter/history"
+          element={
+            <RoleGate allowedRoles={recruiterRoles}>
+              <RecruiterHistory />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/recruiter/chat"
+          element={
+            <RoleGate allowedRoles={recruiterRoles}>
+              <RecruiterChat />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/recruiter/notifications"
+          element={
+            <RoleGate allowedRoles={recruiterRoles}>
+              <RecruiterNotifications />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/recruiter/companies"
+          element={
+            <RoleGate allowedRoles={recruiterRoles}>
+              <RecruiterCompanies />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/recruiter/jobs"
+          element={
+            <RoleGate allowedRoles={recruiterRoles}>
+              <RecruiterJobs />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/recruiter/applications"
+          element={
+            <RoleGate allowedRoles={recruiterRoles}>
+              <RecruiterApplications />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/recruiter/applications/:id"
+          element={
+            <RoleGate allowedRoles={recruiterRoles}>
+              <RecruiterApplications />
             </RoleGate>
           }
         />

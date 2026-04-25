@@ -4,6 +4,7 @@ import { apiRequest } from "../lib/api.js";
 import HomeHeader from "../sections/HomeHeader.jsx";
 import AnnouncementBar from "../sections/AnnouncementBar.jsx";
 import FloatingActions from "../sections/FloatingActions.jsx";
+import Footer from "../sections/Footer.jsx";
 import { useSavedJobs } from "../hooks/useSavedJobs.js";
 
 const formatNumber = (value) => {
@@ -266,6 +267,7 @@ const JobDetail = () => {
       </div>
 
       <FloatingActions />
+      <Footer />
     </div>
   );
 };

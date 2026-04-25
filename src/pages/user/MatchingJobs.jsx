@@ -40,10 +40,7 @@ const MatchingJobs = () => {
       setLoading(true);
       setError("");
       try {
-        const data = await apiRequest("/api/recommendations/cv", {
-          method: "POST",
-          body: JSON.stringify({})
-        });
+        const data = await apiRequest("/api/recommendations/job-needs");
         if (active) {
           setItems(Array.isArray(data) ? data : []);
         }
@@ -74,7 +71,7 @@ const MatchingJobs = () => {
           <section className="user-card">
             <h2>Việc làm phù hợp</h2>
             <p className="muted">
-              Những công việc phù hợp nhất với kỹ năng và CV hiện tại của bạn.
+              Những công việc phù hợp nhất với nhu cầu công việc hiện tại của bạn.
             </p>
 
             {loading && <p>Đang tải dữ liệu...</p>}
@@ -82,9 +79,9 @@ const MatchingJobs = () => {
             {!loading && !error && items.length === 0 && (
               <div className="empty-state">
                 <div className="empty-illustration" />
-                <p>Chưa có gợi ý phù hợp. Hãy cập nhật CV để nhận đề xuất.</p>
-                <Link to="/" className="primary-link">
-                  Cập nhật CV
+                <p>Chưa có gợi ý phù hợp. Hãy cập nhật nhu cầu công việc để nhận đề xuất.</p>
+                <Link to="/user/job-needs" className="primary-link">
+                  Cập nhật nhu cầu
                 </Link>
               </div>
             )}
@@ -118,9 +115,11 @@ const MatchingJobs = () => {
 
           <aside className="promo-card">
             <div className="promo-illustration" />
-            <h3>Sở hữu CV độc đáo</h3>
-            <p>Giúp bạn nổi bật trước nhà tuyển dụng</p>
-            <button type="button">Tìm hiểu ngay</button>
+            <h3>Tối ưu nhu cầu tìm việc</h3>
+            <p>Chỉnh tiêu chí để gợi ý sát hơn với vị trí bạn muốn</p>
+            <Link to="/user/job-needs" className="outline-btn">
+              Cập nhật ngay
+            </Link>
           </aside>
         </div>
       </div>

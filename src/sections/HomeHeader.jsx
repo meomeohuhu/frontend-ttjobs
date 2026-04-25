@@ -1,8 +1,14 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
 
-const navItems = ["Việc làm", "Hồ sơ", "Công cụ", "Cẩm nang", "TTJobs"];
+const navItems = [
+  { label: "Việc làm", to: "/" },
+  { label: "Hồ sơ", to: "/create-cv" },
+  { label: "Công cụ", to: "#" },
+  { label: "Cẩm nang", to: "/career-guide" },
+  { label: "TTJobs", to: "#" }
+];
 
 const menuSections = [
   {
@@ -50,6 +56,7 @@ const menuSections = [
 
 const HomeHeader = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const menuRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
@@ -57,6 +64,8 @@ const HomeHeader = () => {
     "Cá nhân & Bảo mật": true
   });
   const [profile, setProfile] = useState(null);
+  const [recruiterUnreadCount, setRecruiterUnreadCount] = useState(0);
+  const [recruiterApplicationCount, setRecruiterApplicationCount] = useState(0);
 
   const token = localStorage.getItem("ttjobs_token");
   const isLoggedIn = Boolean(token);
@@ -64,6 +73,8 @@ const HomeHeader = () => {
   useEffect(() => {
     if (!isLoggedIn) {
       setProfile(null);
+      setRecruiterUnreadCount(0);
+      setRecruiterApplicationCount(0);
       setIsMenuOpen(false);
       return;
     }
@@ -122,6 +133,57 @@ const HomeHeader = () => {
   const role = String(profile?.role || "").toUpperCase();
   const isRecruiterRole = role === "RECRUITER" || role === "ADMIN";
 
+  useEffect(() => {
+    if (!isLoggedIn || !isRecruiterRole) {
+      setRecruiterUnreadCount(0);
+      setRecruiterApplicationCount(0);
+      return;
+    }
+
+    let active = true;
+
+    const loadRecruiterShortcuts = async () => {
+      try {
+        const [dashboardResult, unreadResult] = await Promise.allSettled([
+          apiRequest("/api/recruiter/dashboard"),
+          apiRequest("/api/notifications/unread-count"),
+        ]);
+
+        if (active && dashboardResult.status === "fulfilled") {
+          setRecruiterApplicationCount(Number(dashboardResult.value?.newApplicationCount || 0));
+        }
+        if (active && unreadResult.status === "fulfilled") {
+          setRecruiterUnreadCount(Number(unreadResult.value?.unreadCount || 0));
+        }
+      } catch {
+        if (active) {
+          setRecruiterUnreadCount(0);
+          setRecruiterApplicationCount(0);
+        }
+      }
+    };
+
+    loadRecruiterShortcuts();
+
+    return () => {
+      active = false;
+    };
+  }, [isLoggedIn, isRecruiterRole]);
+
+  const activeNavLabel = useMemo(() => {
+    const path = location.pathname || "/";
+    if (path === "/" || path.startsWith("/jobs") || path.startsWith("/companies")) {
+      return "Việc làm";
+    }
+    if (path.startsWith("/create-cv") || path.startsWith("/user")) {
+      return "Hồ sơ";
+    }
+    if (path.startsWith("/career-guide")) {
+      return "Cẩm nang";
+    }
+    return "";
+  }, [location.pathname]);
+
   const handleLogout = () => {
     localStorage.removeItem("ttjobs_token");
     setProfile(null);
@@ -143,7 +205,7 @@ const HomeHeader = () => {
 
   return (
     <header className="topcv-header">
-      <div className="topcv-logo">
+      <Link to="/" className="topcv-logo" aria-label="TTJobs trang chủ">
         <div className="logo-mark">
           <div className="logo-badge">
             <span>TT</span>
@@ -153,26 +215,41 @@ const HomeHeader = () => {
             <span className="logo-tagline">Việc làm theo gu của bạn</span>
           </div>
         </div>
-      </div>
+      </Link>
 
       <nav className="topcv-nav">
         {navItems.map((item) => (
-          <button className="nav-item" key={item} type="button">
-            {item}
-            {item === "Việc làm" ? <span className="nav-caret" /> : null}
-          </button>
+          <Link
+            className="nav-item"
+            key={item.label}
+            to={item.to}
+            aria-current={activeNavLabel === item.label ? "page" : undefined}
+            data-active={activeNavLabel === item.label ? "true" : "false"}
+          >
+            {item.label}
+          </Link>
         ))}
       </nav>
 
       <div className="topcv-actions">
         <div className="icon-group">
-          <button className="icon-btn" type="button" aria-label="Thông báo">
-            <span className="icon-bell" />
-            <span className="icon-badge">1</span>
-          </button>
-          <button className="icon-btn" type="button" aria-label="Tin nhắn">
-            <span className="icon-chat" />
-          </button>
+          {isLoggedIn && !isRecruiterRole ? (
+            <Link className="icon-btn user-quick-icon" to="/messages" aria-label="Tin nhắn">
+              <span className="icon-chat" />
+            </Link>
+          ) : null}
+          {isRecruiterRole ? (
+            <>
+              <Link className="icon-btn recruiter-quick-icon" to="/recruiter/chat" aria-label="Trò chuyện">
+                <span className="icon-chat" />
+                {recruiterApplicationCount > 0 ? <span className="icon-badge">{recruiterApplicationCount}</span> : null}
+              </Link>
+              <Link className="icon-btn recruiter-quick-icon" to="/recruiter/notifications" aria-label="Thông báo">
+                <span className="icon-bell" />
+                {recruiterUnreadCount > 0 ? <span className="icon-badge">{recruiterUnreadCount}</span> : null}
+              </Link>
+            </>
+          ) : null}
 
           <div className="account-menu" ref={menuRef}>
             <button
