@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { apiRequest } from "../../lib/api.js";
 import RecruiterLayout from "./RecruiterLayout.jsx";
 import { formatDate, formatNumber } from "./recruiterUtils.js";
@@ -64,6 +65,36 @@ const RecruiterNotifications = () => {
     }
   };
 
+  const renderNotificationContent = (content) => {
+    if (!content) {
+      return "Bạn có thông báo mới.";
+    }
+    return String(content)
+      .replace("You have a new message from null", "Bạn có tin nhắn mới từ người dùng")
+      .replace("You have a new message from", "Bạn có tin nhắn mới từ");
+  };
+
+  const getNotificationTarget = (notification) => {
+    if (notification?.targetUrl) {
+      return notification.targetUrl;
+    }
+    if (notification?.type === "CHAT_MESSAGE") {
+      return "/recruiter/chat";
+    }
+    return "";
+  };
+
+  const markOneAsRead = async (notification) => {
+    if (!notification?.id || notification.isRead) {
+      return;
+    }
+    try {
+      await apiRequest(`/api/notifications/${notification.id}/read`, { method: "PUT" });
+    } catch {
+      // Navigation should not be blocked if the read receipt fails.
+    }
+  };
+
   return (
     <RecruiterLayout
       title="Thông báo"
@@ -110,19 +141,37 @@ const RecruiterNotifications = () => {
             </header>
 
             <div className="recruiter-console-list recruiter-notification-list">
-              {filteredNotifications.length > 0 ? filteredNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`recruiter-console-item recruiter-notification-item ${notification.isRead ? "" : "unread"}`}
-                >
-                  <div className="recruiter-console-item-row">
-                    <strong>{notification.title}</strong>
-                    {!notification.isRead ? <span className="recruiter-dot" /> : null}
+              {filteredNotifications.length > 0 ? filteredNotifications.map((notification) => {
+                const target = getNotificationTarget(notification);
+                const content = (
+                  <>
+                    <div className="recruiter-console-item-row">
+                      <strong>{notification.title}</strong>
+                      {!notification.isRead ? <span className="recruiter-dot" /> : null}
+                    </div>
+                    <p>{renderNotificationContent(notification.content)}</p>
+                    <small>{formatDate(notification.createdAt)}</small>
+                  </>
+                );
+
+                return target ? (
+                  <Link
+                    key={notification.id}
+                    to={target}
+                    className={`recruiter-console-item recruiter-notification-item recruiter-notification-link ${notification.isRead ? "" : "unread"}`}
+                    onClick={() => markOneAsRead(notification)}
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div
+                    key={notification.id}
+                    className={`recruiter-console-item recruiter-notification-item ${notification.isRead ? "" : "unread"}`}
+                  >
+                    {content}
                   </div>
-                  <p>{notification.content}</p>
-                  <small>{formatDate(notification.createdAt)}</small>
-                </div>
-              )) : <p className="recruiter-empty">Chưa có thông báo.</p>}
+                );
+              }) : <p className="recruiter-empty">Chưa có thông báo.</p>}
             </div>
           </div>
         </section>

@@ -2,12 +2,77 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
 
+const iconPaths = {
+  jobs: (
+    <>
+      <path d="M10 6h4" />
+      <path d="M5 8.5A2.5 2.5 0 0 1 7.5 6h9A2.5 2.5 0 0 1 19 8.5v8A2.5 2.5 0 0 1 16.5 19h-9A2.5 2.5 0 0 1 5 16.5z" />
+      <path d="M5 11h14" />
+    </>
+  ),
+  cv: (
+    <>
+      <path d="M7 4h7l3 3v13H7z" />
+      <path d="M14 4v4h4" />
+      <path d="M9 12h6" />
+      <path d="M9 16h5" />
+    </>
+  ),
+  tools: (
+    <>
+      <path d="M14.7 6.3a4 4 0 0 0 3 5.4l-6 6a2.2 2.2 0 0 1-3.1-3.1l6-6a4 4 0 0 0 .1-2.3z" />
+      <path d="M5 19l3-3" />
+    </>
+  ),
+  guide: (
+    <>
+      <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v16H7.5A2.5 2.5 0 0 0 5 21z" />
+      <path d="M5 5.5v15" />
+      <path d="M9 7h6" />
+      <path d="M9 11h5" />
+    </>
+  ),
+  sparkle: (
+    <>
+      <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z" />
+      <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
+    </>
+  ),
+  chat: (
+    <>
+      <path d="M20 14.5a3 3 0 0 1-3 3H8l-4 2.5V6.5a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z" />
+      <path d="M8 9h8" />
+      <path d="M8 13h5" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M18 9a6 6 0 0 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 15 18 9" />
+      <path d="M14 20a2.2 2.2 0 0 1-4 0" />
+    </>
+  ),
+  dashboard: (
+    <>
+      <rect x="4" y="4" width="7" height="7" rx="2" />
+      <rect x="13" y="4" width="7" height="5" rx="2" />
+      <rect x="13" y="11" width="7" height="9" rx="2" />
+      <rect x="4" y="13" width="7" height="7" rx="2" />
+    </>
+  )
+};
+
+const HeaderIcon = ({ name, className = "" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {iconPaths[name]}
+  </svg>
+);
+
 const navItems = [
-  { label: "Việc làm", to: "/" },
-  { label: "Hồ sơ", to: "/create-cv" },
-  { label: "Công cụ", to: "#" },
-  { label: "Cẩm nang", to: "/career-guide" },
-  { label: "TTJobs", to: "#" }
+  { label: "Việc làm", to: "/", icon: "jobs" },
+  { label: "Hồ sơ", to: "/create-cv", icon: "cv" },
+  { label: "Công cụ", to: "#", icon: "tools" },
+  { label: "Cẩm nang", to: "/career-guide", icon: "guide" },
+  { label: "TTJobs", to: "#", icon: "sparkle" }
 ];
 
 const menuSections = [
@@ -226,7 +291,8 @@ const HomeHeader = () => {
             aria-current={activeNavLabel === item.label ? "page" : undefined}
             data-active={activeNavLabel === item.label ? "true" : "false"}
           >
-            {item.label}
+            <HeaderIcon name={item.icon} className="nav-icon" />
+            <span>{item.label}</span>
           </Link>
         ))}
       </nav>
@@ -235,17 +301,17 @@ const HomeHeader = () => {
         <div className="icon-group">
           {isLoggedIn && !isRecruiterRole ? (
             <Link className="icon-btn user-quick-icon" to="/messages" aria-label="Tin nhắn">
-              <span className="icon-chat" />
+              <HeaderIcon name="chat" className="header-action-icon" />
             </Link>
           ) : null}
           {isRecruiterRole ? (
             <>
               <Link className="icon-btn recruiter-quick-icon" to="/recruiter/chat" aria-label="Trò chuyện">
-                <span className="icon-chat" />
+                <HeaderIcon name="chat" className="header-action-icon" />
                 {recruiterApplicationCount > 0 ? <span className="icon-badge">{recruiterApplicationCount}</span> : null}
               </Link>
               <Link className="icon-btn recruiter-quick-icon" to="/recruiter/notifications" aria-label="Thông báo">
-                <span className="icon-bell" />
+                <HeaderIcon name="bell" className="header-action-icon" />
                 {recruiterUnreadCount > 0 ? <span className="icon-badge">{recruiterUnreadCount}</span> : null}
               </Link>
             </>
@@ -346,12 +412,26 @@ const HomeHeader = () => {
           {isRecruiterRole ? (
             <>
               <span>Workspace tuyển dụng</span>
-              <Link to="/recruiter/dashboard">Mở dashboard</Link>
+              <Link to="/recruiter/dashboard">
+                <HeaderIcon name="dashboard" className="recruiter-link-icon" />
+                <span>Mở dashboard</span>
+              </Link>
+            </>
+          ) : isLoggedIn ? (
+            <>
+              <span>Workspace ứng viên</span>
+              <Link to="/user/dashboard">
+                <HeaderIcon name="dashboard" className="recruiter-link-icon" />
+                <span>Mở dashboard</span>
+              </Link>
             </>
           ) : (
             <>
               <span>Bạn là nhà tuyển dụng?</span>
-              <Link to="/register">Đăng tuyển ngay</Link>
+              <Link to="/register">
+                <HeaderIcon name="jobs" className="recruiter-link-icon" />
+                <span>Đăng tuyển ngay</span>
+              </Link>
             </>
           )}
         </div>

@@ -1,6 +1,86 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { apiRequest } from "../../lib/api.js";
+import { apiRequest, downloadApiFile } from "../../lib/api.js";
+import { subscribeToConversation } from "../../lib/stompClient.js";
+
+const AttachIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M16.5 6.5 9.1 13.9a3 3 0 1 0 4.2 4.2l7.4-7.4a5 5 0 0 0-7.1-7.1l-7.8 7.8a7 7 0 0 0 9.9 9.9l6.4-6.4" />
+  </svg>
+);
+
+const SendIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 12 20 4l-4 16-5-6-7-2z" />
+    <path d="m11 14 9-10" />
+  </svg>
+);
+
+const BellIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+);
+
+const MessageIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 14.8a3 3 0 0 1-3 3H8l-5 3V6.2a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3z" />
+    <path d="M8 9h8" />
+    <path d="M8 13h5" />
+  </svg>
+);
+
+const HomeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+
+const AttachmentIcon = ({ attachment }) => {
+  const fileName = (attachment?.fileName || "").toLowerCase();
+  const mimeType = (attachment?.mimeType || "").toLowerCase();
+  const isPdf = mimeType.includes("pdf") || fileName.endsWith(".pdf");
+  const isDoc = mimeType.includes("word") || fileName.endsWith(".doc") || fileName.endsWith(".docx");
+  const isImage = mimeType.startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(fileName);
+
+  if (isPdf) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M7 3h7l5 5v13H7z" />
+        <path d="M14 3v5h5" />
+        <path d="M9 15h6" />
+      </svg>
+    );
+  }
+
+  if (isDoc) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M7 3h7l5 5v13H7z" />
+        <path d="M14 3v5h5" />
+        <path d="M9 13h6M9 16h6" />
+      </svg>
+    );
+  }
+
+  if (isImage) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="4" y="5" width="16" height="14" rx="2" />
+        <circle cx="9" cy="10" r="1.5" />
+        <path d="M20 16l-5-5-4 4-2-2-5 5" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16.5 6.5 9.1 13.9a3 3 0 1 0 4.2 4.2l7.4-7.4a5 5 0 0 0-7.1-7.1l-7.8 7.8a7 7 0 0 0 9.9 9.9l6.4-6.4" />
+    </svg>
+  );
+};
 
 const MessagesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,11 +97,12 @@ const MessagesPage = () => {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const threadRef = useRef(null);
 
   const getConversationTitle = (conversation, index) => {
     if (!conversation) return `Cuộc trò chuyện ${index + 1}`;
     const date = conversation.lastMessageAt || conversation.createdAt ? new Date(conversation.lastMessageAt || conversation.createdAt) : null;
-    const suffix = date && !Number.isNaN(date.getTime()) ? ` · ${date.toLocaleDateString("vi-VN")}` : "";
+    const suffix = date && !Number.isNaN(date.getTime()) ? ` • ${date.toLocaleDateString("vi-VN")}` : "";
     return `Cuộc trò chuyện ${index + 1}${suffix}`;
   };
 
@@ -107,6 +188,17 @@ const MessagesPage = () => {
     }
   };
 
+  const appendRealtimeMessage = (incomingMessage) => {
+    if (!incomingMessage?.id) return;
+    setMessages((prev) => {
+      if (prev.some((item) => String(item.id) === String(incomingMessage.id))) {
+        return prev;
+      }
+      return [...prev, incomingMessage];
+    });
+    refreshConversations();
+  };
+
   useEffect(() => {
     loadWorkspace();
   }, []);
@@ -132,6 +224,19 @@ const MessagesPage = () => {
       setSelectedConversationId(String(conversations[0].id));
     }
   }, [conversations, selectedConversation, selectedConversationId]);
+
+  useEffect(() => {
+    if (!selectedConversationId) return undefined;
+    return subscribeToConversation(selectedConversationId, appendRealtimeMessage);
+  }, [selectedConversationId]);
+
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (!thread) return;
+    window.requestAnimationFrame(() => {
+      thread.scrollTop = thread.scrollHeight;
+    });
+  }, [messages.length, selectedConversationId, messagesLoading]);
 
   const sendMessage = async (event) => {
     event.preventDefault();
@@ -162,6 +267,20 @@ const MessagesPage = () => {
     }
   };
 
+  const downloadAttachment = async (attachment) => {
+    if (!selectedConversationId || !attachment?.id) return;
+    setMessage("");
+    setError("");
+    try {
+      await downloadApiFile(
+        `/api/conversations/${selectedConversationId}/attachments/${attachment.id}/download`,
+        attachment.fileName || "attachment"
+      );
+    } catch (err) {
+      setError(err.message || "Không thể tải tệp đính kèm");
+    }
+  };
+
   const bubbleMessages = messages.map((item) => ({
     ...item,
     mine: currentUserId != null && String(item.senderId) === String(currentUserId)
@@ -171,15 +290,22 @@ const MessagesPage = () => {
     <div className="messages-page">
       <header className="messages-topbar">
         <Link to="/" className="messages-brand" aria-label="TTJobs trang chủ">
-          <span className="messages-brand-mark">TT</span>
+          <span className="messages-brand-mark">
+            <MessageIcon />
+          </span>
           <span className="messages-brand-copy">
             <strong>TTJobs Connect</strong>
             <small>Beta</small>
           </span>
         </Link>
         <div className="messages-topbar-actions">
-          <Link to="/" className="messages-home-link">Về trang chủ</Link>
-          <Link to="/user/notifications" className="messages-settings-link" aria-label="Thiết lập thông báo">⚙</Link>
+          <Link to="/" className="messages-home-link" title="Về trang chủ">
+            <HomeIcon />
+            <span>Về trang chủ</span>
+          </Link>
+          <Link to="/user/notifications" className="messages-settings-link" aria-label="Thiết lập thông báo" title="Thiết lập thông báo">
+            <BellIcon />
+          </Link>
         </div>
       </header>
 
@@ -220,7 +346,7 @@ const MessagesPage = () => {
                     <span>Trao đổi với nhà tuyển dụng</span>
                     <small>
                       {conversation.lastMessagePreview || (conversation.createdAt ? new Date(conversation.createdAt).toLocaleDateString("vi-VN") : "Chưa có ngày")}
-                      {Number(conversation.unreadByOthersCount || 0) > 0 ? ` · ${conversation.unreadByOthersCount} chưa xem` : ""}
+                      {Number(conversation.unreadByOthersCount || 0) > 0 ? ` • ${conversation.unreadByOthersCount} chưa xem` : ""}
                     </small>
                   </div>
                 </button>
@@ -231,12 +357,7 @@ const MessagesPage = () => {
           </div>
         </aside>
 
-        <main className="messages-main">
-          <div className="messages-banner">
-            <span>New way to follow your chance.</span>
-            <strong>More engage, more success</strong>
-          </div>
-
+        <main className="messages-main messages-main-no-banner">
           <div className="messages-main-surface">
             {!selectedConversation ? (
               <div className="messages-empty-state">
@@ -251,15 +372,15 @@ const MessagesPage = () => {
               <>
                 <div className="messages-thread-header">
                   <div>
-                    <h2>{selectedApplication ? `${selectedApplication.jobTitle} · ${selectedApplication.companyName}` : getConversationTitle(selectedConversation, conversations.findIndex((item) => String(item.id) === String(selectedConversation.id)))}</h2>
-                    <small>{selectedApplication ? `${selectedApplication.status || "Đang xử lý"} · ${selectedApplication.userName || "CV đã nộp"}` : "Tin nhắn giữa bạn và nhà tuyển dụng"}</small>
+                    <h2>{selectedApplication ? `${selectedApplication.jobTitle} • ${selectedApplication.companyName}` : getConversationTitle(selectedConversation, conversations.findIndex((item) => String(item.id) === String(selectedConversation.id)))}</h2>
+                    <small>{selectedApplication ? `${selectedApplication.status || "Đang xử lý"} • ${selectedApplication.userName || "CV đã nộp"}` : "Tin nhắn giữa bạn và nhà tuyển dụng"}</small>
                   </div>
                   <div className="messages-thread-actions">
                     <Link to="/user/applied" className="messages-secondary-action">Hồ sơ đã ứng tuyển</Link>
                   </div>
                 </div>
 
-                <div className="messages-thread">
+                <div className="messages-thread" ref={threadRef}>
                   {messagesLoading ? <p className="messages-empty">Đang tải tin nhắn...</p> : null}
                   {!messagesLoading && bubbleMessages.length > 0 ? bubbleMessages.map((item) => (
                     <div key={item.id} className={`messages-bubble ${item.mine ? "mine" : ""}`}>
@@ -267,15 +388,17 @@ const MessagesPage = () => {
                       {Array.isArray(item.attachments) && item.attachments.length > 0 ? (
                         <div className="messages-attachment-list">
                           {item.attachments.map((attachment) => (
-                            <a
+                            <button
                               key={attachment.id}
-                              href={attachment.fileUrl}
-                              target="_blank"
-                              rel="noreferrer"
+                              type="button"
                               className="messages-attachment-link"
+                              onClick={() => downloadAttachment(attachment)}
                             >
-                              {attachment.fileName || "Tệp đính kèm"}
-                            </a>
+                              <span className="messages-attachment-icon" aria-hidden="true">
+                                <AttachmentIcon attachment={attachment} />
+                              </span>
+                              <span className="messages-attachment-name">{attachment.fileName || "Tệp đính kèm"}</span>
+                            </button>
                           ))}
                         </div>
                       ) : null}
@@ -293,14 +416,16 @@ const MessagesPage = () => {
                     onChange={(event) => setMessageText(event.target.value)}
                     placeholder="Nhập tin nhắn..."
                   />
-                  <label className="messages-file-button">
+                  <label className="messages-icon-button" aria-label="Tệp đính kèm" title="Tệp đính kèm">
                     <input
                       type="file"
                       onChange={(event) => setAttachmentFile(event.target.files?.[0] || null)}
                     />
-                    Tệp
+                    <AttachIcon />
                   </label>
-                  <button type="submit" className="messages-primary-action">Gửi</button>
+                  <button type="submit" className="messages-primary-action" aria-label="Gửi tin nhắn" title="Gửi tin nhắn">
+                    <SendIcon />
+                  </button>
                 </form>
                 {attachmentFile ? <p className="messages-file-name">Đã chọn: {attachmentFile.name}</p> : null}
               </>
@@ -320,7 +445,7 @@ const MessagesPage = () => {
                 <div>
                   <strong>{application.jobTitle || "Tin tuyển dụng"}</strong>
                   <p>{application.companyName || "Nhà tuyển dụng"}</p>
-                  <small>{application.status || "Đang xử lý"} · {application.applicationDate ? new Date(application.applicationDate).toLocaleDateString("vi-VN") : "Chưa có ngày"}</small>
+                  <small>{application.status || "Đang xử lý"} • {application.applicationDate ? new Date(application.applicationDate).toLocaleDateString("vi-VN") : "Chưa có ngày"}</small>
                 </div>
                 <Link to={`/jobs/${application.jobId}`} className="messages-secondary-action">Xem tin</Link>
               </div>

@@ -7,6 +7,8 @@ import FloatingActions from "../sections/FloatingActions.jsx";
 import Footer from "../sections/Footer.jsx";
 import { useSavedJobs } from "../hooks/useSavedJobs.js";
 
+const TOKEN_KEY = "ttjobs_token";
+
 const formatNumber = (value) => {
   const numberValue = Number(value);
   if (!Number.isFinite(numberValue) || numberValue <= 0) {
@@ -31,14 +33,41 @@ const formatSalary = (job) => {
   return "Thỏa thuận";
 };
 
+const formatDate = (value) => {
+  if (!value) return "Đang cập nhật";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("vi-VN");
+};
+
 const JobDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [job, setJob] = useState(null);
   const [relatedJobs, setRelatedJobs] = useState([]);
+  const [myApplications, setMyApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
+  const [showApplyForm, setShowApplyForm] = useState(false);
+  const [cvFile, setCvFile] = useState(null);
+  const [useProfileCv, setUseProfileCv] = useState(false);
+  const [saveToCvList, setSaveToCvList] = useState(true);
   const [error, setError] = useState("");
+  const [applyMessage, setApplyMessage] = useState("");
   const { savedIdSet, savingIds, toggleSavedJob } = useSavedJobs();
+
+  const loadMyApplications = async () => {
+    if (!localStorage.getItem(TOKEN_KEY)) {
+      setMyApplications([]);
+      return;
+    }
+    try {
+      const data = await apiRequest("/api/applications/me");
+      setMyApplications(Array.isArray(data) ? data : []);
+    } catch {
+      setMyApplications([]);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -61,6 +90,7 @@ const JobDetail = () => {
             setRelatedJobs(filtered);
           }
         }
+        await loadMyApplications();
       } catch (err) {
         if (active) {
           setError(err.message || "Không thể tải thông tin công việc");
@@ -84,6 +114,10 @@ const JobDetail = () => {
     return job.description;
   }, [job]);
 
+  const alreadyApplied = useMemo(() => {
+    return myApplications.some((application) => String(application.jobId) === String(job?.id));
+  }, [myApplications, job?.id]);
+
   const handleToggleSave = async () => {
     if (!job?.id) return;
     try {
@@ -94,6 +128,62 @@ const JobDetail = () => {
         return;
       }
       setError(err.message || "Không thể lưu công việc");
+    }
+  };
+
+  const openApplyForm = () => {
+    setError("");
+    setApplyMessage("");
+    if (!localStorage.getItem(TOKEN_KEY)) {
+      navigate("/login");
+      return;
+    }
+    setShowApplyForm(true);
+  };
+
+  const submitApplication = async (event) => {
+    event.preventDefault();
+    if (!job?.id || applying || alreadyApplied) return;
+
+    if (!cvFile && !useProfileCv) {
+      setError("Bạn cần tải CV hoặc chọn dùng CV đã lưu.");
+      return;
+    }
+    if (cvFile && useProfileCv) {
+      setError("Chỉ chọn một cách nộp CV: tải file mới hoặc dùng CV đã lưu.");
+      return;
+    }
+
+    setApplying(true);
+    setError("");
+    setApplyMessage("");
+    try {
+      const formData = new FormData();
+      formData.append("jobId", job.id);
+      formData.append("useProfileCv", String(useProfileCv));
+      formData.append("saveToCvList", String(saveToCvList));
+      if (cvFile) {
+        formData.append("file", cvFile);
+      }
+
+      await apiRequest("/api/applications/apply", {
+        method: "POST",
+        body: formData
+      });
+      setApplyMessage("Ứng tuyển thành công. Hồ sơ của bạn đã được gửi đến nhà tuyển dụng.");
+      setShowApplyForm(false);
+      setCvFile(null);
+      setUseProfileCv(false);
+      await loadMyApplications();
+    } catch (err) {
+      const message = err.message || "Không thể ứng tuyển công việc";
+      if (message.toLowerCase().includes("unauthorized")) {
+        navigate("/login");
+        return;
+      }
+      setError(message);
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -115,9 +205,10 @@ const JobDetail = () => {
         </div>
 
         {loading && <p>Đang tải dữ liệu...</p>}
-        {!loading && error && <p>{error}</p>}
+        {!loading && error && <p className="job-detail-alert error">{error}</p>}
+        {!loading && applyMessage && <p className="job-detail-alert success">{applyMessage}</p>}
 
-        {!loading && !error && job && (
+        {!loading && job && (
           <>
             <div className="job-hero">
               <div className="job-main-card">
@@ -137,11 +228,16 @@ const JobDetail = () => {
                   </div>
                 </div>
                 <p className="job-deadline">
-                  Hạn nộp hồ sơ: <strong>{job.applicationDeadline || "Đang cập nhật"}</strong>
+                  Hạn nộp hồ sơ: <strong>{formatDate(job.applicationDeadline)}</strong>
                 </p>
                 <div className="job-actions">
-                  <button type="button" className="apply-btn">
-                    Ứng tuyển ngay
+                  <button
+                    type="button"
+                    className="apply-btn"
+                    disabled={alreadyApplied || applying}
+                    onClick={openApplyForm}
+                  >
+                    {alreadyApplied ? "Đã ứng tuyển" : "Ứng tuyển ngay"}
                   </button>
                   <button
                     type="button"
@@ -152,6 +248,58 @@ const JobDetail = () => {
                     {isSaved ? "Đã lưu" : "Lưu tin"}
                   </button>
                 </div>
+
+                {showApplyForm && !alreadyApplied ? (
+                  <form className="job-apply-panel" onSubmit={submitApplication}>
+                    <div>
+                      <strong>Nộp CV ứng tuyển</strong>
+                      <span>Hỗ trợ PDF, DOC, DOCX. Dung lượng tối đa 5MB.</span>
+                    </div>
+                    <label className="job-apply-upload">
+                      <span>{cvFile ? cvFile.name : "Chọn file CV"}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        onChange={(event) => {
+                          setCvFile(event.target.files?.[0] || null);
+                          if (event.target.files?.[0]) {
+                            setUseProfileCv(false);
+                          }
+                        }}
+                      />
+                    </label>
+                    <label className="job-apply-check">
+                      <input
+                        type="checkbox"
+                        checked={useProfileCv}
+                        onChange={(event) => {
+                          setUseProfileCv(event.target.checked);
+                          if (event.target.checked) {
+                            setCvFile(null);
+                          }
+                        }}
+                      />
+                      Dùng CV đã lưu trong hồ sơ
+                    </label>
+                    <label className="job-apply-check">
+                      <input
+                        type="checkbox"
+                        checked={saveToCvList}
+                        disabled={useProfileCv}
+                        onChange={(event) => setSaveToCvList(event.target.checked)}
+                      />
+                      Lưu file CV này vào hồ sơ của tôi
+                    </label>
+                    <div className="job-apply-actions">
+                      <button type="button" className="save-btn" onClick={() => setShowApplyForm(false)}>
+                        Hủy
+                      </button>
+                      <button type="submit" className="apply-btn" disabled={applying}>
+                        {applying ? "Đang gửi..." : "Gửi hồ sơ"}
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
               </div>
 
               <aside className="company-card">
@@ -168,7 +316,7 @@ const JobDetail = () => {
                   <span>Địa điểm:</span>
                   <strong>{job.location || "Đang cập nhật"}</strong>
                 </div>
-                <Link to="#" className="company-link">
+                <Link to={job.companyId ? `/companies/${job.companyId}` : "#"} className="company-link">
                   Xem trang công ty
                 </Link>
               </aside>

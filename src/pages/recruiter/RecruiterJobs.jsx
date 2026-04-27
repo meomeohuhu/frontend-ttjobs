@@ -14,6 +14,7 @@ const emptyJob = {
   jobType: "Full-time",
   experienceLevel: "ENTRY",
   category: "INFORMATION-TECHNOLOGY",
+  imageUrl: "",
   applicationDeadline: "",
   status: "draft"
 };
@@ -37,6 +38,7 @@ const toJobForm = (job) => ({
   jobType: job.jobType || "Full-time",
   experienceLevel: job.experienceLevel || "ENTRY",
   category: job.category || "INFORMATION-TECHNOLOGY",
+  imageUrl: job.imageUrl || "",
   applicationDeadline: toDateTimeLocal(job.applicationDeadline),
   status: job.status || "draft"
 });
@@ -47,6 +49,7 @@ const RecruiterJobs = () => {
   const [selectedJobId, setSelectedJobId] = useState("");
   const [filters, setFilters] = useState({ companyId: "", status: "", keyword: "" });
   const [form, setForm] = useState(emptyJob);
+  const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -94,6 +97,7 @@ const RecruiterJobs = () => {
   useEffect(() => {
     if (selectedJob) {
       setForm(toJobForm(selectedJob));
+      setImageFile(null);
     }
   }, [selectedJob]);
 
@@ -107,9 +111,26 @@ const RecruiterJobs = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleImageFile = (event) => {
+    setImageFile(event.target.files?.[0] || null);
+  };
+
+  const uploadJobImage = async (jobId) => {
+    if (!imageFile) {
+      return null;
+    }
+    const formData = new FormData();
+    formData.append("file", imageFile);
+    return apiRequest(`/api/jobs/${jobId}/image`, {
+      method: "POST",
+      body: formData
+    });
+  };
+
   const resetCreate = () => {
     setSelectedJobId("");
     setForm({ ...emptyJob, companyId: companies[0]?.id ? String(companies[0].id) : "" });
+    setImageFile(null);
     setMessage("");
     setError("");
   };
@@ -124,6 +145,7 @@ const RecruiterJobs = () => {
     jobType: form.jobType,
     experienceLevel: form.experienceLevel,
     category: form.category,
+    imageUrl: form.imageUrl,
     status: nextStatus,
     applicationDeadline: form.applicationDeadline ? new Date(form.applicationDeadline).toISOString() : null,
     company: { id: Number(form.companyId) }
@@ -140,6 +162,7 @@ const RecruiterJobs = () => {
     setError("");
     try {
       const payload = payloadFromForm(status);
+      let targetJobId = selectedJob?.id;
       if (selectedJob) {
         await apiRequest(`/api/jobs/${selectedJob.id}`, {
           method: "PUT",
@@ -151,8 +174,16 @@ const RecruiterJobs = () => {
           method: "POST",
           body: JSON.stringify(payload)
         });
-        setSelectedJobId(created?.id ? String(created.id) : "");
+        targetJobId = created?.id;
+        setSelectedJobId(targetJobId ? String(targetJobId) : "");
         setMessage("Đã tạo job.");
+      }
+      if (targetJobId && imageFile) {
+        const uploaded = await uploadJobImage(targetJobId);
+        if (uploaded?.imageUrl) {
+          setForm((prev) => ({ ...prev, imageUrl: uploaded.imageUrl }));
+        }
+        setImageFile(null);
       }
       await loadJobs();
     } catch (err) {
@@ -245,6 +276,23 @@ const RecruiterJobs = () => {
             <h2>{selectedJob ? "Sửa job" : "Tạo job"}</h2>
           </header>
           <form className="recruiter-form" onSubmit={saveJob}>
+            <div className="image-upload-card wide banner">
+              <div className="image-upload-preview">
+                {imageFile || form.imageUrl ? (
+                  <img src={imageFile ? URL.createObjectURL(imageFile) : form.imageUrl} alt="Ảnh tin tuyển dụng" />
+                ) : (
+                  <span>JOB</span>
+                )}
+              </div>
+              <div className="image-upload-copy">
+                <strong>Ảnh đại diện tin tuyển dụng</strong>
+                <span>Dùng cho card job/public page. JPG, PNG hoặc WEBP, tối đa 3MB.</span>
+                <label className="image-upload-button">
+                  Chọn ảnh
+                  <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImageFile} />
+                </label>
+              </div>
+            </div>
             <label className="wide">
               <span>Tiêu đề</span>
               <input name="title" value={form.title} onChange={handleChange} required />

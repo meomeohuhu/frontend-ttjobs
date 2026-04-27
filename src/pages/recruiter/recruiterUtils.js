@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../../lib/api.js";
+import { API_BASE_URL, extractFileName } from "../../lib/api.js";
 
 export const applicationStatuses = [
   "submitted",
@@ -10,6 +10,17 @@ export const applicationStatuses = [
   "rejected",
   "withdrawn"
 ];
+
+export const applicationStatusLabels = {
+  submitted: "Mới nộp",
+  reviewing: "Đang xem",
+  shortlisted: "Vào shortlist",
+  interviewed: "Đã phỏng vấn",
+  offered: "Đã gửi offer",
+  hired: "Đã tuyển",
+  rejected: "Từ chối",
+  withdrawn: "Đã rút"
+};
 
 export const jobStatuses = ["draft", "open", "closed", "archived"];
 
@@ -57,8 +68,31 @@ export const openCvBlob = async (applicationId) => {
   if (!response.ok) {
     throw new Error("Không thể mở CV");
   }
+  const contentType = response.headers.get("content-type") || "application/octet-stream";
+  const fileName = extractFileName(response.headers.get("content-disposition")) || `cv${guessCvExtension(contentType)}`;
   const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank", "noopener,noreferrer");
-  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  const typedBlob = blob.type ? blob : new Blob([blob], { type: contentType });
+  const url = URL.createObjectURL(typedBlob);
+
+  if (contentType.toLowerCase().includes("pdf")) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
+const guessCvExtension = (contentType) => {
+  const type = (contentType || "").toLowerCase();
+  if (type.includes("officedocument.wordprocessingml.document")) return ".docx";
+  if (type.includes("msword")) return ".doc";
+  if (type.includes("pdf")) return ".pdf";
+  return ".pdf";
 };

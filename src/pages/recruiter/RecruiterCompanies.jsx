@@ -23,6 +23,7 @@ const RecruiterCompanies = () => {
   const [form, setForm] = useState(emptyCompany);
   const [members, setMembers] = useState([]);
   const [memberForm, setMemberForm] = useState(emptyMember);
+  const [logoFile, setLogoFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -54,6 +55,7 @@ const RecruiterCompanies = () => {
     if (!selectedCompany) {
       setForm(emptyCompany);
       setMembers([]);
+      setLogoFile(null);
       return;
     }
     setForm({
@@ -64,6 +66,7 @@ const RecruiterCompanies = () => {
       industry: selectedCompany.industry || "",
       logoUrl: selectedCompany.logoUrl || ""
     });
+    setLogoFile(null);
     apiRequest(`/api/companies/${selectedCompany.id}/members`)
       .then((data) => setMembers(Array.isArray(data) ? data : []))
       .catch(() => setMembers([]));
@@ -74,6 +77,22 @@ const RecruiterCompanies = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleLogoFile = (event) => {
+    setLogoFile(event.target.files?.[0] || null);
+  };
+
+  const uploadLogo = async (companyId) => {
+    if (!logoFile) {
+      return null;
+    }
+    const formData = new FormData();
+    formData.append("file", logoFile);
+    return apiRequest(`/api/companies/${companyId}/logo`, {
+      method: "POST",
+      body: formData
+    });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSaving(true);
@@ -81,6 +100,7 @@ const RecruiterCompanies = () => {
     setError("");
     try {
       const payload = { ...form };
+      let targetId = selectedCompany?.id;
       if (selectedCompany) {
         await apiRequest(`/api/companies/${selectedCompany.id}`, {
           method: "PUT",
@@ -92,8 +112,16 @@ const RecruiterCompanies = () => {
           method: "POST",
           body: JSON.stringify(payload)
         });
-        setSelectedId(created?.id ? String(created.id) : "");
+        targetId = created?.id;
+        setSelectedId(targetId ? String(targetId) : "");
         setMessage("Đã tạo công ty.");
+      }
+      if (targetId && logoFile) {
+        const uploaded = await uploadLogo(targetId);
+        if (uploaded?.logoUrl) {
+          setForm((prev) => ({ ...prev, logoUrl: uploaded.logoUrl }));
+        }
+        setLogoFile(null);
       }
       await loadCompanies();
     } catch (err) {
@@ -106,6 +134,7 @@ const RecruiterCompanies = () => {
   const resetCreate = () => {
     setSelectedId("");
     setForm(emptyCompany);
+    setLogoFile(null);
     setMembers([]);
     setMessage("");
     setError("");
@@ -195,6 +224,23 @@ const RecruiterCompanies = () => {
             <h2>{selectedCompany ? "Thông tin công ty" : "Tạo công ty"}</h2>
           </header>
           <form className="recruiter-form" onSubmit={handleSubmit}>
+            <div className="image-upload-card wide">
+              <div className="image-upload-preview">
+                {logoFile || form.logoUrl ? (
+                  <img src={logoFile ? URL.createObjectURL(logoFile) : form.logoUrl} alt="Logo công ty" />
+                ) : (
+                  <span>{(form.name || "TT").slice(0, 2).toUpperCase()}</span>
+                )}
+              </div>
+              <div className="image-upload-copy">
+                <strong>Ảnh đại diện công ty</strong>
+                <span>JPG, PNG hoặc WEBP. Tối đa 3MB.</span>
+                <label className="image-upload-button">
+                  Chọn logo
+                  <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoFile} />
+                </label>
+              </div>
+            </div>
             <label>
               <span>Tên công ty</span>
               <input name="name" value={form.name} onChange={handleChange} required />

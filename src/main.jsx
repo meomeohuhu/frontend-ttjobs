@@ -15,7 +15,12 @@ import RecruiterNotifications from "./pages/recruiter/RecruiterNotifications.jsx
 import RecruiterCompanies from "./pages/recruiter/RecruiterCompanies.jsx";
 import RecruiterJobs from "./pages/recruiter/RecruiterJobs.jsx";
 import RecruiterApplications from "./pages/recruiter/RecruiterApplications.jsx";
+import RecruiterCandidateSearch from "./pages/recruiter/RecruiterCandidateSearch.jsx";
+import RecruiterInterviews from "./pages/recruiter/RecruiterInterviews.jsx";
+import RecruiterCampaigns from "./pages/recruiter/RecruiterCampaigns.jsx";
+import RecruiterReports from "./pages/recruiter/RecruiterReports.jsx";
 import MessagesPage from "./pages/user/Messages.jsx";
+import CandidateDashboard from "./pages/user/CandidateDashboard.jsx";
 import RoleGate from "./components/RoleGate.jsx";
 
 import ProfileSettings from "./pages/user/ProfileSettings.jsx";
@@ -25,6 +30,7 @@ import JobNeedsSettings from "./pages/user/JobNeedsSettings.jsx";
 import SavedJobs from "./pages/user/SavedJobs.jsx";
 import AppliedJobs from "./pages/user/AppliedJobs.jsx";
 import MatchingJobs from "./pages/user/MatchingJobs.jsx";
+import MyInterviews from "./pages/user/MyInterviews.jsx";
 import CreateCV from "./pages/CreateCV.jsx";
 
 const root = createRoot(document.getElementById("root"));
@@ -39,6 +45,14 @@ root.render(
         <Route path="/career-guide" element={<CareerGuide />} />
         <Route path="/career-guide/:slug" element={<CareerGuide />} />
         <Route path="/companies/:id" element={<CompanyDetail />} />
+        <Route
+          path="/user/dashboard"
+          element={
+            <RoleGate allowedRoles={["CANDIDATE"]}>
+              <CandidateDashboard />
+            </RoleGate>
+          }
+        />
         <Route path="/user/saved" element={<SavedJobs />} />
         <Route path="/user/applied" element={<AppliedJobs />} />
         <Route path="/user/matching" element={<MatchingJobs />} />
@@ -46,6 +60,7 @@ root.render(
         <Route path="/user/password" element={<PasswordSettings />} />
         <Route path="/user/notifications" element={<NotificationSettings />} />
         <Route path="/user/job-needs" element={<JobNeedsSettings />} />
+        <Route path="/user/interviews" element={<MyInterviews />} />
         <Route
           path="/messages"
           element={
@@ -115,6 +130,38 @@ root.render(
           element={
             <RoleGate allowedRoles={recruiterRoles}>
               <RecruiterApplications />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/recruiter/candidates"
+          element={
+            <RoleGate allowedRoles={recruiterRoles}>
+              <RecruiterCandidateSearch />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/recruiter/interviews"
+          element={
+            <RoleGate allowedRoles={recruiterRoles}>
+              <RecruiterInterviews />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/recruiter/campaigns"
+          element={
+            <RoleGate allowedRoles={recruiterRoles}>
+              <RecruiterCampaigns />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/recruiter/reports"
+          element={
+            <RoleGate allowedRoles={recruiterRoles}>
+              <RecruiterReports />
             </RoleGate>
           }
         />

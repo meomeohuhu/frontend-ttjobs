@@ -1,11 +1,15 @@
 export const API_BASE_URL = "http://localhost:8080";
 
-export async function apiRequest(path, options = {}) {
+function getAuthHeaders(extraHeaders = {}) {
   const token = localStorage.getItem("ttjobs_token");
-  const headers = {
+  return {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.headers || {})
+    ...extraHeaders
   };
+}
+
+export async function apiRequest(path, options = {}) {
+  const headers = getAuthHeaders(options.headers || {});
 
   // Only set default JSON content type if not explicitely overridden or if it's not a FormData body
   if (!headers["Content-Type"] && !(options.body instanceof FormData)) {
@@ -40,4 +44,46 @@ export async function apiRequest(path, options = {}) {
     return response.json();
   }
   return response.text();
+}
+
+export async function downloadApiFile(path, fallbackFileName = "download") {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: getAuthHeaders()
+  });
+
+  if (!response.ok) {
+    let message = "Download failed";
+    try {
+      const data = await response.json();
+      if (data && data.message) {
+        message = data.message;
+      }
+    } catch (err) {
+      // Keep the default message when the server returns a non-JSON error.
+    }
+    throw new Error(message);
+  }
+
+  const blob = await response.blob();
+  const fileName = extractFileName(response.headers.get("content-disposition")) || fallbackFileName;
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function extractFileName(contentDisposition) {
+  if (!contentDisposition) return "";
+
+  const encodedMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (encodedMatch?.[1]) {
+    return decodeURIComponent(encodedMatch[1]);
+  }
+
+  const plainMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  return plainMatch?.[1] || "";
 }

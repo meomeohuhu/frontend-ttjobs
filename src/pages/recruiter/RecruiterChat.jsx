@@ -1,7 +1,100 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { apiRequest } from "../../lib/api.js";
+import { apiRequest, downloadApiFile } from "../../lib/api.js";
+import { subscribeToConversation } from "../../lib/stompClient.js";
 import { formatDate, formatNumber, openCvBlob } from "./recruiterUtils.js";
+
+const AttachIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M16.5 6.5 9.1 13.9a3 3 0 1 0 4.2 4.2l7.4-7.4a5 5 0 0 0-7.1-7.1l-7.8 7.8a7 7 0 0 0 9.9 9.9l6.4-6.4" />
+  </svg>
+);
+
+const SendIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 12 20 4l-4 16-5-6-7-2z" />
+    <path d="m11 14 9-10" />
+  </svg>
+);
+
+const BellIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+);
+
+const MessageIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 14.8a3 3 0 0 1-3 3H8l-5 3V6.2a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3z" />
+    <path d="M8 9h8" />
+    <path d="M8 13h5" />
+  </svg>
+);
+
+const HomeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+
+const AttachmentIcon = ({ attachment }) => {
+  const fileName = (attachment?.fileName || "").toLowerCase();
+  const mimeType = (attachment?.mimeType || "").toLowerCase();
+  const isPdf = mimeType.includes("pdf") || fileName.endsWith(".pdf");
+  const isDoc = mimeType.includes("word") || fileName.endsWith(".doc") || fileName.endsWith(".docx");
+  const isImage = mimeType.startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(fileName);
+
+  if (isPdf) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M7 3h7l5 5v13H7z" />
+        <path d="M14 3v5h5" />
+        <path d="M9 15h6" />
+      </svg>
+    );
+  }
+
+  if (isDoc) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M7 3h7l5 5v13H7z" />
+        <path d="M14 3v5h5" />
+        <path d="M9 13h6M9 16h6" />
+      </svg>
+    );
+  }
+
+  if (isImage) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="4" y="5" width="16" height="14" rx="2" />
+        <circle cx="9" cy="10" r="1.5" />
+        <path d="M20 16l-5-5-4 4-2-2-5 5" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16.5 6.5 9.1 13.9a3 3 0 1 0 4.2 4.2l7.4-7.4a5 5 0 0 0-7.1-7.1l-7.8 7.8a7 7 0 0 0 9.9 9.9l6.4-6.4" />
+    </svg>
+  );
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "Chưa có thời gian";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Chưa có thời gian";
+  return date.toLocaleString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+};
 
 const RecruiterChat = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,6 +111,7 @@ const RecruiterChat = () => {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const threadRef = useRef(null);
 
   const getApplicantDisplayName = (application) => {
     return application?.candidateName || application?.candidateEmail || "Người nộp CV";
@@ -133,6 +227,17 @@ const RecruiterChat = () => {
     }
   };
 
+  const appendRealtimeMessage = (incomingMessage) => {
+    if (!incomingMessage?.id) return;
+    setMessages((prev) => {
+      if (prev.some((item) => String(item.id) === String(incomingMessage.id))) {
+        return prev;
+      }
+      return [...prev, incomingMessage];
+    });
+    refreshConversations();
+  };
+
   useEffect(() => {
     loadWorkspace();
   }, []);
@@ -158,6 +263,19 @@ const RecruiterChat = () => {
       setSelectedConversationId(String(conversations[0].id));
     }
   }, [conversations, selectedConversation, selectedConversationId]);
+
+  useEffect(() => {
+    if (!selectedConversationId) return undefined;
+    return subscribeToConversation(selectedConversationId, appendRealtimeMessage);
+  }, [selectedConversationId]);
+
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (!thread) return;
+    window.requestAnimationFrame(() => {
+      thread.scrollTop = thread.scrollHeight;
+    });
+  }, [messages.length, selectedConversationId, messagesLoading]);
 
   const openConversation = (application) => {
     const candidateId = application?.candidateId;
@@ -218,6 +336,20 @@ const RecruiterChat = () => {
     }
   };
 
+  const downloadAttachment = async (attachment) => {
+    if (!selectedConversationId || !attachment?.id) return;
+    setMessage("");
+    setError("");
+    try {
+      await downloadApiFile(
+        `/api/conversations/${selectedConversationId}/attachments/${attachment.id}/download`,
+        attachment.fileName || "attachment"
+      );
+    } catch (err) {
+      setError(err.message || "Không thể tải tệp đính kèm");
+    }
+  };
+
   const handleOpenCv = async () => {
     if (!selectedApplication?.id) return;
     try {
@@ -236,15 +368,22 @@ const RecruiterChat = () => {
     <div className="messages-page recruiter-messages-page">
       <header className="messages-topbar">
         <Link to="/recruiter/dashboard" className="messages-brand" aria-label="Recruiter dashboard">
-          <span className="messages-brand-mark">TT</span>
+          <span className="messages-brand-mark">
+            <MessageIcon />
+          </span>
           <span className="messages-brand-copy">
             <strong>Recruiter Connect</strong>
             <small>Workspace</small>
           </span>
         </Link>
         <div className="messages-topbar-actions">
-          <Link to="/recruiter/dashboard" className="messages-home-link">Về dashboard</Link>
-          <Link to="/recruiter/notifications" className="messages-settings-link" aria-label="Thông báo">⚙</Link>
+          <Link to="/recruiter/dashboard" className="messages-home-link" title="Về dashboard">
+            <HomeIcon />
+            <span>Về dashboard</span>
+          </Link>
+          <Link to="/recruiter/notifications" className="messages-settings-link" aria-label="Thông báo" title="Thông báo">
+            <BellIcon />
+          </Link>
         </div>
       </header>
 
@@ -286,8 +425,8 @@ const RecruiterChat = () => {
                     <strong>{getApplicantDisplayName(application)}</strong>
                     <span>{application.jobTitle || "Job đang ứng tuyển"}</span>
                     <small>
-                      {application.companyName || "Công ty"} · {formatDate(application.applicationDate)}
-                      {Number(convo?.unreadByOthersCount || 0) > 0 ? ` · ${convo.unreadByOthersCount} chưa xem` : ""}
+                      {application.companyName || "Công ty"} • {formatDateTime(convo?.lastMessageAt || application.applicationDate)}
+                      {Number(convo?.unreadByOthersCount || 0) > 0 ? ` • ${convo.unreadByOthersCount} chưa xem` : ""}
                     </small>
                   </div>
                 </button>
@@ -298,12 +437,7 @@ const RecruiterChat = () => {
           </div>
         </aside>
 
-        <main className="messages-main">
-          <div className="messages-banner">
-            <span>New way to follow your chance.</span>
-            <strong>More engage, more success</strong>
-          </div>
-
+        <main className="messages-main messages-main-no-banner">
           <div className="messages-main-surface">
             {!selectedConversation ? (
               <div className="messages-empty-state">
@@ -319,7 +453,7 @@ const RecruiterChat = () => {
                 <div className="messages-thread-header">
                   <div>
                     <h2>{getApplicantDisplayName(selectedApplication)}</h2>
-                    <small>{selectedApplication?.jobTitle || "Job"} · {selectedApplication?.companyName || "Công ty"}</small>
+                    <small>{selectedApplication?.jobTitle || "Job"} • {selectedApplication?.companyName || "Công ty"}</small>
                   </div>
                   <div className="messages-thread-actions">
                     <button type="button" className="messages-secondary-action" onClick={handleOpenCv}>Xem CV</button>
@@ -332,7 +466,7 @@ const RecruiterChat = () => {
                   </div>
                 </div>
 
-                <div className="messages-thread">
+                <div className="messages-thread" ref={threadRef}>
                   {messagesLoading ? <p className="messages-empty">Đang tải tin nhắn...</p> : null}
                   {!messagesLoading && bubbleMessages.length > 0 ? bubbleMessages.map((item) => (
                     <div key={item.id} className={`messages-bubble ${item.mine ? "mine" : ""}`}>
@@ -340,19 +474,21 @@ const RecruiterChat = () => {
                       {Array.isArray(item.attachments) && item.attachments.length > 0 ? (
                         <div className="messages-attachment-list">
                           {item.attachments.map((attachment) => (
-                            <a
+                            <button
                               key={attachment.id}
-                              href={attachment.fileUrl}
-                              target="_blank"
-                              rel="noreferrer"
+                              type="button"
                               className="messages-attachment-link"
+                              onClick={() => downloadAttachment(attachment)}
                             >
-                              {attachment.fileName || "Tệp đính kèm"}
-                            </a>
+                              <span className="messages-attachment-icon" aria-hidden="true">
+                                <AttachmentIcon attachment={attachment} />
+                              </span>
+                              <span className="messages-attachment-name">{attachment.fileName || "Tệp đính kèm"}</span>
+                            </button>
                           ))}
                         </div>
                       ) : null}
-                      <small>{formatDate(item.createdAt)}</small>
+                      <small>{formatDateTime(item.createdAt)}</small>
                     </div>
                   )) : null}
                   {!messagesLoading && bubbleMessages.length === 0 ? (
@@ -366,14 +502,16 @@ const RecruiterChat = () => {
                     onChange={(event) => setMessageText(event.target.value)}
                     placeholder="Nhập tin nhắn..."
                   />
-                  <label className="messages-file-button">
+                  <label className="messages-icon-button" aria-label="Tệp đính kèm" title="Tệp đính kèm">
                     <input
                       type="file"
                       onChange={(event) => setAttachmentFile(event.target.files?.[0] || null)}
                     />
-                    Tệp
+                    <AttachIcon />
                   </label>
-                  <button type="submit" className="messages-primary-action">Gửi</button>
+                  <button type="submit" className="messages-primary-action" aria-label="Gửi tin nhắn" title="Gửi tin nhắn">
+                    <SendIcon />
+                  </button>
                 </form>
                 {attachmentFile ? <p className="messages-file-name">Đã chọn: {attachmentFile.name}</p> : null}
               </>
@@ -381,7 +519,7 @@ const RecruiterChat = () => {
           </div>
         </main>
 
-        <aside className="messages-right">
+        <aside className="messages-right recruiter-other-applicants">
           <div className="messages-right-head">
             <strong>Người ứng tuyển khác</strong>
             <span>Ứng tuyển vào tin tuyển dụng của bạn trong 7 ngày qua</span>
@@ -393,10 +531,11 @@ const RecruiterChat = () => {
                 <div>
                   <strong>{getApplicantDisplayName(application)}</strong>
                   <p>{application.jobTitle || "Job đang ứng tuyển"}</p>
-                  <small>{application.companyName || "Công ty"} · {formatDate(application.applicationDate)}</small>
+                  <small>{application.companyName || "Công ty"} • {formatDate(application.applicationDate)}</small>
                 </div>
                 <button type="button" className="messages-secondary-action" onClick={() => openConversation(application)}>
-                  Nhắn tin
+                  <MessageIcon />
+                  <span>Nhắn tin</span>
                 </button>
               </div>
             )) : (

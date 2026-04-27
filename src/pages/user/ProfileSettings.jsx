@@ -17,6 +17,8 @@ const ProfileSettings = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [profileId, setProfileId] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -31,6 +33,7 @@ const ProfileSettings = () => {
         }
 
         setProfileId(data?.id ? `ID ${data.id}` : "");
+        setAvatarUrl(data?.avatarUrl || "");
         setForm({
           name: data?.name || "",
           phone: data?.phone || "",
@@ -64,6 +67,22 @@ const ProfileSettings = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleAvatarFile = (event) => {
+    setAvatarFile(event.target.files?.[0] || null);
+  };
+
+  const uploadAvatar = async () => {
+    if (!avatarFile) {
+      return null;
+    }
+    const formData = new FormData();
+    formData.append("file", avatarFile);
+    return apiRequest("/api/users/me/avatar", {
+      method: "POST",
+      body: formData
+    });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSaving(true);
@@ -87,6 +106,13 @@ const ProfileSettings = () => {
         method: "PUT",
         body: JSON.stringify(payload)
       });
+      if (avatarFile) {
+        const avatar = await uploadAvatar();
+        setAvatarUrl(avatar?.avatarUrl || "");
+        setAvatarFile(null);
+      } else {
+        setAvatarUrl(data?.avatarUrl || avatarUrl);
+      }
 
       setForm({
         name: data?.name || "",
@@ -115,7 +141,8 @@ const ProfileSettings = () => {
         <div className="settings-aside-card">
           <h3>Hồ sơ của bạn</h3>
           <p className="settings-aside-id">{profileId || "Đang tải..."}</p>
-          <ul>
+        <ul>
+            <li>Thêm ảnh đại diện hồ sơ</li>
             <li>Đổi tên hiển thị</li>
             <li>Cập nhật số điện thoại</li>
             <li>Thêm kỹ năng theo ngôn ngữ tự nhiên</li>
@@ -127,6 +154,24 @@ const ProfileSettings = () => {
         {loading ? <p>Đang tải dữ liệu...</p> : null}
         {!loading && error ? <p className="settings-error">{error}</p> : null}
         {message ? <p className="settings-success">{message}</p> : null}
+
+        <div className="image-upload-card settings-avatar-upload">
+          <div className="image-upload-preview avatar">
+            {avatarFile || avatarUrl ? (
+              <img src={avatarFile ? URL.createObjectURL(avatarFile) : avatarUrl} alt="Ảnh đại diện" />
+            ) : (
+              <span>{(form.name || "UV").slice(0, 2).toUpperCase()}</span>
+            )}
+          </div>
+          <div className="image-upload-copy">
+            <strong>Ảnh đại diện</strong>
+            <span>JPG, PNG hoặc WEBP. Tối đa 3MB.</span>
+            <label className="image-upload-button">
+              Chọn ảnh
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarFile} />
+            </label>
+          </div>
+        </div>
 
         <div className="settings-grid">
           <label className="settings-field">

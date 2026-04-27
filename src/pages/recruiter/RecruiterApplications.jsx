@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../lib/api.js";
 import RecruiterLayout from "./RecruiterLayout.jsx";
 import {
+  applicationStatusLabels,
   applicationStatuses,
   formatDate,
   nextApplicationStatuses,
@@ -24,6 +25,8 @@ const RecruiterApplications = () => {
   });
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkStatus, setBulkStatus] = useState("reviewing");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -103,6 +106,14 @@ const RecruiterApplications = () => {
     }));
   };
 
+  const toggleSelected = (applicationId) => {
+    setSelectedIds((prev) => (
+      prev.includes(applicationId)
+        ? prev.filter((item) => item !== applicationId)
+        : [...prev, applicationId]
+    ));
+  };
+
   const updateStatus = async (applicationId, status) => {
     setError("");
     setMessage("");
@@ -115,6 +126,24 @@ const RecruiterApplications = () => {
       await loadDetail(applicationId);
     } catch (err) {
       setError(err.message || "Không thể cập nhật trạng thái");
+    }
+  };
+
+  const bulkUpdateStatus = async () => {
+    if (selectedIds.length === 0) return;
+    setError("");
+    setMessage("");
+    try {
+      await apiRequest("/api/recruiter/applications/status", {
+        method: "PUT",
+        body: JSON.stringify({ applicationIds: selectedIds, status: bulkStatus })
+      });
+      setSelectedIds([]);
+      setMessage("Đã cập nhật trạng thái hàng loạt.");
+      await loadApplications();
+      if (id) await loadDetail(id);
+    } catch (err) {
+      setError(err.message || "Không thể cập nhật hàng loạt");
     }
   };
 
@@ -133,7 +162,7 @@ const RecruiterApplications = () => {
 
   return (
     <RecruiterLayout
-      title="Pipeline ứng viên"
+      title="Ứng viên"
       description="Theo dõi hồ sơ theo trạng thái, xem CV và cập nhật tiến trình tuyển dụng."
       actions={<Link to="/recruiter/jobs" className="recruiter-primary-action">Tạo job</Link>}
     >
@@ -156,7 +185,7 @@ const RecruiterApplications = () => {
         <select name="status" value={filters.status} onChange={handleFilter}>
           <option value="">Tất cả trạng thái</option>
           {applicationStatuses.map((status) => (
-            <option key={status} value={status}>{status}</option>
+            <option key={status} value={status}>{applicationStatusLabels[status] || status}</option>
           ))}
         </select>
         <input
@@ -167,12 +196,24 @@ const RecruiterApplications = () => {
         />
       </section>
 
+      <section className="recruiter-bulk-bar">
+        <strong>{selectedIds.length} hồ sơ đã chọn</strong>
+        <select value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value)}>
+          {applicationStatuses.filter((status) => status !== "submitted").map((status) => (
+            <option key={status} value={status}>{applicationStatusLabels[status] || status}</option>
+          ))}
+        </select>
+        <button type="button" className="recruiter-secondary-action" disabled={selectedIds.length === 0} onClick={bulkUpdateStatus}>
+          Cập nhật hàng loạt
+        </button>
+      </section>
+
       <section className={`recruiter-applications-layout ${detail || id ? "with-detail" : ""}`}>
         <div className="recruiter-kanban">
           {applicationStatuses.map((status) => (
             <article key={status} className="recruiter-kanban-column">
               <header>
-                <strong>{status}</strong>
+                <strong>{applicationStatusLabels[status] || status}</strong>
                 <span>{grouped[status]?.length || 0}</span>
               </header>
               <div className="recruiter-kanban-list">
@@ -183,6 +224,12 @@ const RecruiterApplications = () => {
                     to={`/recruiter/applications/${application.id}?${searchParams.toString()}`}
                     className="recruiter-application-card"
                   >
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(application.id)}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={() => toggleSelected(application.id)}
+                    />
                     <strong>{application.candidateName || "Ứng viên"}</strong>
                     <span>{application.jobTitle}</span>
                     <small>{application.companyName}</small>
@@ -207,21 +254,21 @@ const RecruiterApplications = () => {
               <>
                 <header>
                   <Link to={`/recruiter/applications?${searchParams.toString()}`}>Đóng</Link>
-                  <h2>{detail.candidateName || "Ứng viên"}</h2>
-                  <p>{detail.status}</p>
+                  <h2>Ứng viên: {detail.candidateName}</h2>
+                  <p>{applicationStatusLabels[detail.status] || detail.status}</p>
                 </header>
                 <div className="recruiter-detail-section">
                   <h3>Thông tin ứng viên</h3>
-                  <p>{detail.candidateEmail || "Chưa có email"}</p>
-                  <p>{detail.candidatePhone || "Chưa có số điện thoại"}</p>
-                  <p>{detail.candidateAddress || "Chưa có địa chỉ"}</p>
-                  <p>{detail.candidateExperienceYears ?? 0} năm kinh nghiệm</p>
+                  <p>Email: {detail.candidateEmail || "Chưa có email"}</p>
+                  <p>Số điện thoại: {detail.candidatePhone || "Chưa có số điện thoại"}</p>
+                  <p>Địa chỉ: {detail.candidateAddress || "Chưa có địa chỉ"}</p>
+                  <p>Kinh nghiệm: {detail.candidateExperienceYears ?? 0} năm</p>
                 </div>
                 <div className="recruiter-detail-section">
                   <h3>Ứng tuyển</h3>
-                  <p>{detail.jobTitle}</p>
-                  <p>{detail.companyName}</p>
-                  <p>{formatDate(detail.applicationDate)}</p>
+                  <p>Job: {detail.jobTitle}</p>
+                  <p>Công ty: {detail.companyName}</p>
+                  <p>Ngày nộp: {formatDate(detail.applicationDate)}</p>
                 </div>
                 <div className="recruiter-detail-actions">
                   <button type="button" disabled={!detail.hasCv} onClick={handleOpenCv}>
@@ -229,7 +276,7 @@ const RecruiterApplications = () => {
                   </button>
                   {nextStatuses.map((status) => (
                     <button key={status} type="button" onClick={() => updateStatus(detail.id, status)}>
-                      Chuyển {status}
+                      Chuyển {applicationStatusLabels[status] || status}
                     </button>
                   ))}
                 </div>
@@ -237,7 +284,9 @@ const RecruiterApplications = () => {
                   <h3>Timeline</h3>
                   {(detail.timeline || []).length > 0 ? detail.timeline.map((item, index) => (
                     <div key={`${item.toStatus}-${index}`} className="recruiter-timeline-row">
-                      <strong>{item.fromStatus || "new"} → {item.toStatus}</strong>
+                      <strong>
+                        {applicationStatusLabels[item.fromStatus] || item.fromStatus || "Mới"} → {applicationStatusLabels[item.toStatus] || item.toStatus}
+                      </strong>
                       <span>{formatDate(item.changedAt)}</span>
                     </div>
                   )) : <p>Chưa có lịch sử trạng thái.</p>}
