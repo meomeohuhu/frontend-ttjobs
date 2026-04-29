@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -7,8 +7,7 @@ const Footer = () => {
         <div>
           <div className="footer-brand">TTJobs</div>
           <p>
-            Hỗ trợ ứng viên Việt Nam xây dựng hồ sơ chuyên nghiệp và kết nối với nhà
-            tuyển dụng nhanh chóng.
+            Hỗ trợ ứng viên Việt Nam xây dựng hồ sơ chuyên nghiệp và kết nối với nhà tuyển dụng nhanh chóng.
           </p>
         </div>
         <div className="footer-contact">

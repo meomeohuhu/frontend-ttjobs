@@ -1,18 +1,19 @@
 export const API_BASE_URL = "http://localhost:8080";
 
-function getAuthHeaders(extraHeaders = {}) {
+function getAuthHeaders(extraHeaders = {}, { skipAuth = false } = {}) {
   const token = localStorage.getItem("ttjobs_token");
   return {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(!skipAuth && token ? { Authorization: `Bearer ${token}` } : {}),
     ...extraHeaders
   };
 }
 
 export async function apiRequest(path, options = {}) {
-  const headers = getAuthHeaders(options.headers || {});
+  const { skipAuth = false, ...fetchOptions } = options;
+  const headers = getAuthHeaders(fetchOptions.headers || {}, { skipAuth });
 
   // Only set default JSON content type if not explicitely overridden or if it's not a FormData body
-  if (!headers["Content-Type"] && !(options.body instanceof FormData)) {
+  if (!headers["Content-Type"] && !(fetchOptions.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
   
@@ -22,7 +23,7 @@ export async function apiRequest(path, options = {}) {
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
+    ...fetchOptions,
     headers
   });
 

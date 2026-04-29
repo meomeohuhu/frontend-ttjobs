@@ -82,6 +82,10 @@ const AttachmentIcon = ({ attachment }) => {
   );
 };
 
+const notifyMessagesChanged = () => {
+  window.dispatchEvent(new Event("ttjobs:messages-changed"));
+};
+
 const MessagesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [applications, setApplications] = useState([]);
@@ -120,7 +124,7 @@ const MessagesPage = () => {
     const items = conversations.map((conversation, index) => ({ conversation, index }));
     return items.filter(({ conversation, index }) => {
       const title = getConversationTitle(conversation, index).toLowerCase();
-      const unreadMatch = activeFilter === "unread" ? Number(conversation.unreadByOthersCount || 0) > 0 : true;
+      const unreadMatch = activeFilter === "unread" ? Number(conversation.unreadCount || 0) > 0 : true;
       const keywordMatch = !value || title.includes(value);
       return unreadMatch && keywordMatch;
     });
@@ -164,6 +168,7 @@ const MessagesPage = () => {
     try {
       const convoData = await apiRequest("/api/conversations");
       setConversations(Array.isArray(convoData) ? convoData : []);
+      notifyMessagesChanged();
     } catch {
       // Keep the current list if refresh fails.
     }
@@ -196,6 +201,10 @@ const MessagesPage = () => {
       }
       return [...prev, incomingMessage];
     });
+    if (selectedConversationId && String(incomingMessage.conversationId) === String(selectedConversationId)) {
+      window.setTimeout(() => loadMessages(selectedConversationId), 0);
+      return;
+    }
     refreshConversations();
   };
 
@@ -346,7 +355,7 @@ const MessagesPage = () => {
                     <span>Trao đổi với nhà tuyển dụng</span>
                     <small>
                       {conversation.lastMessagePreview || (conversation.createdAt ? new Date(conversation.createdAt).toLocaleDateString("vi-VN") : "Chưa có ngày")}
-                      {Number(conversation.unreadByOthersCount || 0) > 0 ? ` • ${conversation.unreadByOthersCount} chưa xem` : ""}
+                      {Number(conversation.unreadCount || 0) > 0 ? ` • ${conversation.unreadCount} chưa đọc` : ""}
                     </small>
                   </div>
                 </button>
@@ -382,7 +391,7 @@ const MessagesPage = () => {
 
                 <div className="messages-thread" ref={threadRef}>
                   {messagesLoading ? <p className="messages-empty">Đang tải tin nhắn...</p> : null}
-                  {!messagesLoading && bubbleMessages.length > 0 ? bubbleMessages.map((item) => (
+                  {!messagesLoading && bubbleMessages.length > 0 ? bubbleMessages.map((item, index) => (
                     <div key={item.id} className={`messages-bubble ${item.mine ? "mine" : ""}`}>
                       <p>{item.content}</p>
                       {Array.isArray(item.attachments) && item.attachments.length > 0 ? (
@@ -402,7 +411,12 @@ const MessagesPage = () => {
                           ))}
                         </div>
                       ) : null}
-                      <small>{new Date(item.createdAt).toLocaleString("vi-VN")}</small>
+                      <small>
+                        {new Date(item.createdAt).toLocaleString("vi-VN")}
+                        {item.mine && index === bubbleMessages.length - 1 ? (
+                          Number(selectedConversation?.unreadByOthersCount || 0) > 0 ? " • Chưa xem" : " • Đã xem"
+                        ) : ""}
+                      </small>
                     </div>
                   )) : null}
                   {!messagesLoading && bubbleMessages.length === 0 ? (

@@ -96,6 +96,10 @@ const formatDateTime = (value) => {
   });
 };
 
+const notifyMessagesChanged = () => {
+  window.dispatchEvent(new Event("ttjobs:messages-changed"));
+};
+
 const RecruiterChat = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [applications, setApplications] = useState([]);
@@ -144,7 +148,7 @@ const RecruiterChat = () => {
     const value = keyword.trim().toLowerCase();
     return contactedApplications.filter((item) => {
       const convo = conversationByCandidateId.get(String(item.candidateId));
-      const unreadMatch = activeFilter === "unread" ? Number(convo?.unreadByOthersCount || 0) > 0 : true;
+      const unreadMatch = activeFilter === "unread" ? Number(convo?.unreadCount || 0) > 0 : true;
       const haystack = [item.candidateName, item.candidateEmail, item.jobTitle, item.companyName, item.status]
         .join(" ")
         .toLowerCase();
@@ -203,6 +207,7 @@ const RecruiterChat = () => {
     try {
       const convoData = await apiRequest("/api/conversations");
       setConversations(Array.isArray(convoData) ? convoData : []);
+      notifyMessagesChanged();
     } catch {
       // Keep current conversations if refresh fails.
     }
@@ -235,6 +240,10 @@ const RecruiterChat = () => {
       }
       return [...prev, incomingMessage];
     });
+    if (selectedConversationId && String(incomingMessage.conversationId) === String(selectedConversationId)) {
+      window.setTimeout(() => loadMessages(selectedConversationId), 0);
+      return;
+    }
     refreshConversations();
   };
 
@@ -426,7 +435,7 @@ const RecruiterChat = () => {
                     <span>{application.jobTitle || "Job đang ứng tuyển"}</span>
                     <small>
                       {application.companyName || "Công ty"} • {formatDateTime(convo?.lastMessageAt || application.applicationDate)}
-                      {Number(convo?.unreadByOthersCount || 0) > 0 ? ` • ${convo.unreadByOthersCount} chưa xem` : ""}
+                      {Number(convo?.unreadCount || 0) > 0 ? ` • ${convo.unreadCount} chưa đọc` : ""}
                     </small>
                   </div>
                 </button>
@@ -468,7 +477,7 @@ const RecruiterChat = () => {
 
                 <div className="messages-thread" ref={threadRef}>
                   {messagesLoading ? <p className="messages-empty">Đang tải tin nhắn...</p> : null}
-                  {!messagesLoading && bubbleMessages.length > 0 ? bubbleMessages.map((item) => (
+                  {!messagesLoading && bubbleMessages.length > 0 ? bubbleMessages.map((item, index) => (
                     <div key={item.id} className={`messages-bubble ${item.mine ? "mine" : ""}`}>
                       <p>{item.content}</p>
                       {Array.isArray(item.attachments) && item.attachments.length > 0 ? (
@@ -488,7 +497,12 @@ const RecruiterChat = () => {
                           ))}
                         </div>
                       ) : null}
-                      <small>{formatDateTime(item.createdAt)}</small>
+                      <small>
+                        {formatDateTime(item.createdAt)}
+                        {item.mine && index === bubbleMessages.length - 1 ? (
+                          Number(selectedConversation?.unreadByOthersCount || 0) > 0 ? " • Chưa xem" : " • Đã xem"
+                        ) : ""}
+                      </small>
                     </div>
                   )) : null}
                   {!messagesLoading && bubbleMessages.length === 0 ? (

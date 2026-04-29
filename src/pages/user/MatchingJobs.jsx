@@ -28,6 +28,14 @@ const formatSalary = (job) => {
   return "Thỏa thuận";
 };
 
+const formatMatchScore = (item) => {
+  const value = Number(item?.matchScore);
+  if (!Number.isFinite(value) || value <= 0) {
+    return "Phù hợp";
+  }
+  return `${Math.round(value)}% phù hợp`;
+};
+
 const MatchingJobs = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -102,12 +110,22 @@ const MatchingJobs = () => {
                     )}
                   </div>
                   <div>
+                    <div className="match-score-row">
+                      <span>{formatMatchScore(item)}</span>
+                    </div>
                     <h3>{item.title}</h3>
                     <p>{item.companyName || "Đang cập nhật"}</p>
                     <div className="job-meta">
                       <span>{formatSalary(item)}</span>
                       <span>{item.location || "Toàn quốc"}</span>
                     </div>
+                    {Array.isArray(item.matchReasons) && item.matchReasons.length > 0 ? (
+                      <div className="match-reasons">
+                        {item.matchReasons.slice(0, 3).map((reason) => (
+                          <span key={reason}>{reason}</span>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </Link>
               ))}

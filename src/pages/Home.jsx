@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
 import HomeHeader from "../sections/HomeHeader.jsx";
@@ -7,67 +7,67 @@ import HeroSearch from "../sections/HeroSearch.jsx";
 import BestJobsSection from "../sections/BestJobsSection.jsx";
 import HighlightJobsSection from "../sections/HighlightJobsSection.jsx";
 import BrandsSection from "../sections/BrandsSection.jsx";
+import TopCategoriesSection from "../sections/TopCategoriesSection.jsx";
 import FloatingActions from "../sections/FloatingActions.jsx";
 import Footer from "../sections/Footer.jsx";
 import { useSavedJobs } from "../hooks/useSavedJobs.js";
 
-const getSalaryValue = (job) => {
-  const candidates = [job.salaryMax, job.salaryMin, job.salary];
-  for (const value of candidates) {
-    const numberValue = Number(value);
-    if (Number.isFinite(numberValue) && numberValue > 0) {
-      return numberValue;
-    }
-  }
-  return 0;
-};
-
 const Home = () => {
   const navigate = useNavigate();
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [bestJobs, setBestJobs] = useState([]);
+  const [highlightJobs, setHighlightJobs] = useState([]);
+  const [bestLoading, setBestLoading] = useState(true);
+  const [highlightLoading, setHighlightLoading] = useState(true);
+  const [bestError, setBestError] = useState("");
+  const [highlightError, setHighlightError] = useState("");
   const { savedIdSet, savingIds, toggleSavedJob } = useSavedJobs();
 
   useEffect(() => {
     let active = true;
 
-    const loadJobs = async () => {
-      setLoading(true);
-      setError("");
+    const loadHomeJobs = async () => {
+      setBestLoading(true);
+      setHighlightLoading(true);
+      setBestError("");
+      setHighlightError("");
+
       try {
-        const data = await apiRequest("/api/jobs");
-        if (active) {
-          setJobs(Array.isArray(data) ? data : []);
+        const [bestResult, highlightsResult] = await Promise.allSettled([
+          apiRequest("/api/jobs/best?type=most_saved&size=12", { skipAuth: true }),
+          apiRequest("/api/jobs/highlights?type=high_salary&size=12", { skipAuth: true })
+        ]);
+
+        if (!active) return;
+
+        if (bestResult.status === "fulfilled") {
+          setBestJobs(Array.isArray(bestResult.value) ? bestResult.value : []);
+        } else {
+          setBestError(bestResult.reason?.message || "Không thể tải danh sách việc làm được lưu nhiều.");
+        }
+
+        if (highlightsResult.status === "fulfilled") {
+          setHighlightJobs(Array.isArray(highlightsResult.value) ? highlightsResult.value : []);
+        } else {
+          setHighlightError(highlightsResult.reason?.message || "Không thể tải danh sách việc làm nổi bật.");
         }
       } catch (err) {
         if (active) {
-          setError(err.message || "Không thể tải dữ liệu công việc");
+          setBestError(err.message || "Không thể tải danh sách việc làm được lưu nhiều.");
+          setHighlightError(err.message || "Không thể tải danh sách việc làm nổi bật.");
         }
       } finally {
         if (active) {
-          setLoading(false);
+          setBestLoading(false);
+          setHighlightLoading(false);
         }
       }
     };
 
-    loadJobs();
+    loadHomeJobs();
     return () => {
       active = false;
     };
   }, []);
-
-  const bestJobs = useMemo(() => {
-    return [...jobs]
-      .sort((a, b) => (b.savedCount || 0) - (a.savedCount || 0))
-      .slice(0, 6);
-  }, [jobs]);
-
-  const highSalaryJobs = useMemo(() => {
-    return [...jobs]
-      .sort((a, b) => getSalaryValue(b) - getSalaryValue(a))
-      .slice(0, 4);
-  }, [jobs]);
 
   const handleToggleSave = async (jobId) => {
     try {
@@ -77,7 +77,7 @@ const Home = () => {
         navigate("/login");
         return;
       }
-      setError(err.message || "Không thể lưu công việc");
+      setBestError(err.message || "Không thể lưu công việc lúc này.");
     }
   };
 
@@ -86,23 +86,24 @@ const Home = () => {
       <HomeHeader />
       <AnnouncementBar />
       <HeroSearch />
+      <BrandsSection />
+      <HighlightJobsSection
+        jobs={highlightJobs}
+        loading={highlightLoading}
+        error={highlightError}
+        savedIdSet={savedIdSet}
+        savingIds={savingIds}
+        onToggleSave={handleToggleSave}
+      />
       <BestJobsSection
         jobs={bestJobs}
-        loading={loading}
-        error={error}
+        loading={bestLoading}
+        error={bestError}
         savedIdSet={savedIdSet}
         savingIds={savingIds}
         onToggleSave={handleToggleSave}
       />
-      <HighlightJobsSection
-        jobs={highSalaryJobs}
-        loading={loading}
-        error={error}
-        savedIdSet={savedIdSet}
-        savingIds={savingIds}
-        onToggleSave={handleToggleSave}
-      />
-      <BrandsSection />
+      <TopCategoriesSection />
       <FloatingActions />
       <Footer />
     </div>

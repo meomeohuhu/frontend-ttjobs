@@ -5,6 +5,39 @@ import HomeHeader from "../sections/HomeHeader.jsx";
 import Footer from "../sections/Footer.jsx";
 import AnnouncementBar from "../sections/AnnouncementBar.jsx";
 
+const fallbackArticles = [
+  {
+    slug: "viet-cv-noi-bat-trong-15-phut",
+    title: "Viết CV nổi bật trong 15 phút",
+    summary: "Một checklist ngắn giúp bạn làm rõ kinh nghiệm, thành tựu và từ khóa quan trọng trước khi ứng tuyển.",
+    category: "CV & Hồ sơ",
+    readingTimeMinutes: 5,
+    featured: true,
+    content:
+      "Một CV tốt không cần quá dài, nhưng cần cho nhà tuyển dụng thấy rất nhanh bạn đã làm gì, tạo ra kết quả nào và phù hợp với vai trò ra sao.\n\nHãy ưu tiên các gạch đầu dòng có số liệu, công nghệ hoặc phạm vi công việc cụ thể. Nếu chưa có nhiều kinh nghiệm, hãy dùng dự án cá nhân, đồ án hoặc hoạt động liên quan để chứng minh năng lực."
+  },
+  {
+    slug: "chuan-bi-phong-van-backend",
+    title: "Chuẩn bị phỏng vấn Backend gọn mà chắc",
+    summary: "Cách ôn API, database, transaction và system thinking để bước vào phỏng vấn tự tin hơn.",
+    category: "Phỏng vấn",
+    readingTimeMinutes: 7,
+    featured: false,
+    content:
+      "Phỏng vấn backend thường xoay quanh nền tảng HTTP, database, bảo mật cơ bản và cách bạn phân tích tradeoff.\n\nThay vì học thuộc câu trả lời, hãy chuẩn bị vài câu chuyện dự án thật: vấn đề, lựa chọn kỹ thuật, kết quả và điều bạn sẽ cải thiện nếu làm lại."
+  },
+  {
+    slug: "doc-mo-ta-cong-viec",
+    title: "Đọc mô tả công việc để tránh ứng tuyển lệch",
+    summary: "Nhận diện yêu cầu bắt buộc, yêu cầu cộng điểm và tín hiệu về văn hóa đội nhóm trong JD.",
+    category: "Tìm việc",
+    readingTimeMinutes: 4,
+    featured: false,
+    content:
+      "Một JD tốt thường cho bạn biết công việc hằng ngày, tiêu chí thành công và kỹ năng thật sự cần dùng.\n\nNếu JD quá rộng, hãy tìm các từ khóa lặp lại nhiều lần. Đó thường là năng lực lõi mà nhà tuyển dụng quan tâm nhất."
+  }
+];
+
 const formatReadingTime = (minutes) => {
   const value = Number(minutes);
   if (!Number.isFinite(value) || value <= 0) {
@@ -19,6 +52,8 @@ const splitContent = (content) =>
     .map((part) => part.trim())
     .filter(Boolean);
 
+const friendlyGuideError = "Máy chủ cẩm nang chưa phản hồi. TTJobs đang hiển thị nội dung mẫu để trang vẫn hoàn chỉnh khi demo.";
+
 const CareerGuide = () => {
   const { slug } = useParams();
   const [articles, setArticles] = useState([]);
@@ -30,7 +65,6 @@ const CareerGuide = () => {
 
   const isReading = !!slug;
 
-  // Scroll to top when navigating between articles
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [slug]);
@@ -48,7 +82,8 @@ const CareerGuide = () => {
         }
       } catch (err) {
         if (active) {
-          setError(err.message || "Không thể tải cẩm nang");
+          setArticles([]);
+          setError(friendlyGuideError);
         }
       } finally {
         if (active) {
@@ -82,8 +117,8 @@ const CareerGuide = () => {
         }
       } catch (err) {
         if (active) {
-          setDetailArticle(null);
-          setDetailError(err.message || "Không thể tải bài viết");
+          setDetailArticle(fallbackArticles.find((article) => article.slug === slug) || null);
+          setDetailError("Bài viết thật chưa tải được, đang hiển thị bản mẫu để giữ trải nghiệm đọc.");
         }
       } finally {
         if (active) {
@@ -98,29 +133,28 @@ const CareerGuide = () => {
     };
   }, [slug]);
 
-  // Featured article for the Landing Page
-  const landingFeatured = useMemo(() => {
-    return articles.find((item) => item.featured) || articles[0] || null;
-  }, [articles]);
+  const displayArticles = error || articles.length === 0 ? fallbackArticles : articles;
 
-  // Current article to display in Hero (either the reading one or the landing featured one)
+  const landingFeatured = useMemo(() => {
+    return displayArticles.find((item) => item.featured) || displayArticles[0] || null;
+  }, [displayArticles]);
+
   const heroArticle = isReading ? detailArticle : landingFeatured;
 
   const categories = useMemo(() => {
-    return Array.from(new Set(articles.map((item) => item.category).filter(Boolean)));
-  }, [articles]);
+    return Array.from(new Set(displayArticles.map((item) => item.category).filter(Boolean)));
+  }, [displayArticles]);
 
   const relatedArticles = useMemo(() => {
     const activeSlug = slug || landingFeatured?.slug;
-    return articles.filter((item) => item.slug !== activeSlug).slice(0, 3);
-  }, [articles, slug, landingFeatured?.slug]);
+    return displayArticles.filter((item) => item.slug !== activeSlug).slice(0, 3);
+  }, [displayArticles, slug, landingFeatured?.slug]);
 
   const articleParagraphs = useMemo(() => splitContent(detailArticle?.content), [detailArticle?.content]);
-  
-  // Extra articles for the hero sidebar (Landing only)
+
   const heroSidebarArticles = useMemo(() => {
-    return articles.filter(a => a.slug !== landingFeatured?.slug).slice(0, 2);
-  }, [articles, landingFeatured]);
+    return displayArticles.filter((article) => article.slug !== landingFeatured?.slug).slice(0, 2);
+  }, [displayArticles, landingFeatured]);
 
   return (
     <div className="page-shell career-guide-shell">
@@ -128,30 +162,30 @@ const CareerGuide = () => {
       <HomeHeader />
 
       <main className="page-content career-guide-page">
-        {/* HERO SECTION - Adapts to Mode */}
-        <section className={`career-hero ${isReading ? 'reading-hero' : 'landing-hero'}`}>
+        <section className={`career-hero ${isReading ? "reading-hero" : "landing-hero"}`}>
           <div className="career-hero-left">
             <span className="feature-pill">
-              {isReading ? (detailArticle?.category || "Cẩm nang") : "Cẩm nang nghề nghiệp"}
+              {isReading ? detailArticle?.category || "Cẩm nang" : "Cẩm nang nghề nghiệp"}
             </span>
             <h1>
-              {isReading 
-                ? (detailLoading ? "Đang tải bài viết..." : (detailArticle?.title || "Bài viết không tồn tại"))
-                : (landingFeatured?.title || "Kiến thức tìm việc & phát triển sự nghiệp")}
+              {isReading
+                ? detailLoading
+                  ? "Đang tải bài viết..."
+                  : detailArticle?.title || "Bài viết không tồn tại"
+                : landingFeatured?.title || "Kiến thức tìm việc & phát triển sự nghiệp"}
             </h1>
             <p>
               {isReading
-                ? (detailArticle?.summary || "Đang tải nội dung tóm tắt...")
-                : (landingFeatured?.summary || "Tổng hợp những bài viết thực hành để bạn viết CV tốt hơn, phỏng vấn gọn hơn và ra quyết định nghề nghiệp rõ hơn.")}
+                ? detailArticle?.summary || "Nội dung tóm tắt đang được cập nhật."
+                : landingFeatured?.summary ||
+                  "Tổng hợp những bài viết thực hành để bạn viết CV tốt hơn, phỏng vấn gọn hơn và ra quyết định nghề nghiệp rõ hơn."}
             </p>
 
             {isReading ? (
               <div className="guide-meta-row">
                 <span>{formatReadingTime(detailArticle?.readingTimeMinutes)}</span>
-                {detailArticle?.publishedAt && (
-                  <span>• {new Date(detailArticle.publishedAt).toLocaleDateString("vi-VN")}</span>
-                )}
-                <Link to="/career-guide" className="ghost-btn" style={{ marginLeft: '12px' }}>
+                {detailArticle?.publishedAt && <span>• {new Date(detailArticle.publishedAt).toLocaleDateString("vi-VN")}</span>}
+                <Link to="/career-guide" className="ghost-btn" style={{ marginLeft: "12px" }}>
                   ← Quay lại danh sách
                 </Link>
               </div>
@@ -163,15 +197,9 @@ const CareerGuide = () => {
                   </Link>
                 )}
                 <div className="hero-category-list">
-                  {categories.length > 0 ? (
-                    categories.map((category) => <span key={category}>{category}</span>)
-                  ) : (
-                    <>
-                      <span>Tìm việc</span>
-                      <span>Phỏng vấn</span>
-                      <span>Lương thưởng</span>
-                    </>
-                  )}
+                  {categories.map((category) => (
+                    <span key={category}>{category}</span>
+                  ))}
                 </div>
               </div>
             )}
@@ -179,21 +207,28 @@ const CareerGuide = () => {
 
           <div className="career-hero-right">
             {isReading ? (
-              <div className="guide-feature-card">
-                {detailArticle?.coverImageUrl && (
-                  <img className="guide-cover" src={detailArticle.coverImageUrl} alt={detailArticle.title} />
+              <div className="guide-feature-card guide-reading-card">
+                {heroArticle?.coverImageUrl ? (
+                  <img className="guide-cover" src={heroArticle.coverImageUrl} alt={heroArticle.title} />
+                ) : (
+                  <div className="guide-cover-fallback">
+                    <span>{formatReadingTime(heroArticle?.readingTimeMinutes)}</span>
+                    <strong>{heroArticle?.category || "Cẩm nang TTJobs"}</strong>
+                  </div>
                 )}
               </div>
             ) : (
               <>
-                <div className="hero-banner-card guide-feature-card">
+                <div className="hero-banner-card guide-feature-card guide-feature-card-v2">
                   {landingFeatured?.coverImageUrl && (
                     <img className="guide-cover" src={landingFeatured.coverImageUrl} alt={landingFeatured.title} />
                   )}
-                  <span className="hero-banner-label">Nổi bật</span>
-                  <h2>{landingFeatured?.title}</h2>
+                  <span className="hero-banner-label">{error ? "Bản demo" : "Nổi bật"}</span>
+                  <h2>{landingFeatured?.title || "Cẩm nang nổi bật cho ứng viên"}</h2>
+                  <p>{landingFeatured?.summary || "Các gợi ý ngắn gọn giúp bạn chuẩn bị hồ sơ và ứng tuyển tự tin hơn."}</p>
                   <div className="guide-meta-row">
                     <span>{formatReadingTime(landingFeatured?.readingTimeMinutes)}</span>
+                    {error ? <span>• Nội dung mẫu</span> : null}
                   </div>
                   <Link className="section-link" to={`/career-guide/${landingFeatured?.slug}`}>
                     Xem chi tiết
@@ -213,24 +248,32 @@ const CareerGuide = () => {
           </div>
         </section>
 
-        {/* CONTENT SECTION */}
         <section className="career-bottom-section">
           <div className="career-bottom-column">
             {isReading ? (
               <div className="bottom-card guide-article-card main-reading-area">
-                {detailLoading && <p>Đang tải nội dung...</p>}
-                {detailError && <p className="error-text">{detailError}</p>}
-                
-                {!detailLoading && !detailError && articleParagraphs.length > 0 && (
+                {detailLoading && <div className="guide-status-card">Đang tải nội dung bài viết...</div>}
+                {detailError && (
+                  <div className="guide-status-card guide-status-warning">
+                    <span>Bản đọc dự phòng</span>
+                    <strong>{detailError}</strong>
+                  </div>
+                )}
+
+                {!detailLoading && detailArticle && articleParagraphs.length > 0 && (
                   <div className="guide-content">
                     {articleParagraphs.map((paragraph, idx) => (
                       <p key={idx}>{paragraph}</p>
                     ))}
                   </div>
                 )}
-                
-                {!detailLoading && !detailError && articleParagraphs.length === 0 && (
-                  <p>Bài viết chưa có nội dung.</p>
+
+                {!detailLoading && !detailArticle && (
+                  <div className="guide-status-card guide-status-warning">
+                    <span>Không tìm thấy bài viết</span>
+                    <strong>Bài viết này chưa có dữ liệu để hiển thị.</strong>
+                    <Link to="/career-guide">Quay lại cẩm nang</Link>
+                  </div>
                 )}
               </div>
             ) : (
@@ -242,22 +285,27 @@ const CareerGuide = () => {
                   </div>
                 </div>
 
-                {loading && <p>Đang tải dữ liệu...</p>}
-                {!loading && error && <p>{error}</p>}
+                {loading && <div className="guide-status-card">Đang tải thư viện cẩm nang nghề nghiệp...</div>}
+                {!loading && error && (
+                  <div className="guide-status-card guide-status-warning">
+                    <span>Đang dùng nội dung mẫu</span>
+                    <strong>Máy chủ cẩm nang chưa phản hồi</strong>
+                    <p>{error}</p>
+                  </div>
+                )}
 
-                {!loading && !error && (
+                {!loading && (
                   <div className="career-card-grid guide-card-grid">
-                    {articles.map((article) => (
+                    {displayArticles.map((article) => (
                       <Link key={article.slug} to={`/career-guide/${article.slug}`} className="career-card guide-card">
-                        {article.coverImageUrl && (
-                          <img className="guide-card-image" src={article.coverImageUrl} alt={article.title} />
-                        )}
+                        {article.coverImageUrl && <img className="guide-card-image" src={article.coverImageUrl} alt={article.title} />}
                         <span className="article-label">{article.category}</span>
                         <h3>{article.title}</h3>
                         <p>{article.summary}</p>
                         <div className="guide-card-meta">
                           <span>{formatReadingTime(article.readingTimeMinutes)}</span>
                           {article.featured && <strong>Nổi bật</strong>}
+                          {error && <strong>Demo</strong>}
                         </div>
                       </Link>
                     ))}
@@ -288,21 +336,18 @@ const CareerGuide = () => {
             <div className="promo-card guide-promo-card">
               <h3>Đọc cẩm nang theo mục tiêu</h3>
               <p>
-                Chọn bài viết phù hợp với giai đoạn hiện tại: viết CV, chuẩn bị phỏng vấn,
-                chuyển ngành hoặc đàm phán offer.
+                Chọn bài viết phù hợp với giai đoạn hiện tại: viết CV, chuẩn bị phỏng vấn, chuyển ngành hoặc đàm phán offer.
               </p>
               <Link className="primary-btn" to="/career-guide">
                 Tất cả bài viết
               </Link>
             </div>
-            
+
             {isReading && (
-               <div className="promo-card" style={{ marginTop: '24px', background: 'var(--notion-badge-bg)' }}>
-                  <h4 style={{ color: 'var(--notion-blue)', marginTop: 0 }}>Về TTJobs</h4>
-                  <p style={{ fontSize: '14px', color: '#64748b' }}>
-                    Chúng tôi giúp bạn tìm kiếm cơ hội nghề nghiệp phù hợp nhất với năng lực và đam mê.
-                  </p>
-               </div>
+              <div className="promo-card guide-about-card">
+                <h4>Về TTJobs</h4>
+                <p>Chúng tôi giúp bạn tìm kiếm cơ hội nghề nghiệp phù hợp nhất với năng lực và đam mê.</p>
+              </div>
             )}
           </aside>
         </section>

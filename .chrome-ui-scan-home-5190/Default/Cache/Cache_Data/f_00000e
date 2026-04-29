@@ -1,0 +1,459 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=4c443d75"; const Fragment = __vite__cjsImport0_react_jsxDevRuntime["Fragment"]; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=4c443d75"; const useEffect = __vite__cjsImport3_react["useEffect"]; const useMemo = __vite__cjsImport3_react["useMemo"]; const useState = __vite__cjsImport3_react["useState"];
+import { Link } from "/node_modules/.vite/deps/react-router-dom.js?v=df9e1c0e";
+import { apiRequest } from "/@fs/C:/Users/Thinhpa/Abackend/frontend/src/lib/api.js";
+import RecruiterLayout from "/@fs/C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterLayout.jsx";
+import { formatDate, formatNumber } from "/@fs/C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/recruiterUtils.js";
+const RecruiterDashboard = () => {
+  _s();
+  const [dashboard, setDashboard] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let active = true;
+    const loadDashboard = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const data = await apiRequest("/api/recruiter/dashboard");
+        if (active) setDashboard(data || null);
+      } catch (err) {
+        if (active) setError(err.message || "Không thể tải dashboard");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    loadDashboard();
+    return () => {
+      active = false;
+    };
+  }, []);
+  const activeStatusCount = useMemo(() => {
+    const counts = dashboard?.applicationStatusCounts || {};
+    return Object.entries(counts).filter(([, count]) => Number(count) > 0).length;
+  }, [dashboard]);
+  return /* @__PURE__ */ jsxDEV(
+    RecruiterLayout,
+    {
+      title: "Dashboard tuyển dụng",
+      description: "Tổng quan job, ứng viên và công ty đang quản lý.",
+      actions: /* @__PURE__ */ jsxDEV(Link, { to: "/recruiter/jobs", className: "recruiter-primary-action", children: "Tạo job" }, void 0, false, {
+        fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+        lineNumber: 60,
+        columnNumber: 16
+      }, this),
+      children: [
+        loading ? /* @__PURE__ */ jsxDEV("p", { className: "recruiter-state", children: "Đang tải dashboard..." }, void 0, false, {
+          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+          lineNumber: 62,
+          columnNumber: 18
+        }, this) : null,
+        !loading && error ? /* @__PURE__ */ jsxDEV("p", { className: "recruiter-state error", children: error }, void 0, false, {
+          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+          lineNumber: 63,
+          columnNumber: 28
+        }, this) : null,
+        !loading && !error && dashboard ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
+          /* @__PURE__ */ jsxDEV("section", { className: "recruiter-kpi-grid", children: [
+            /* @__PURE__ */ jsxDEV("article", { className: "recruiter-kpi-card", children: [
+              /* @__PURE__ */ jsxDEV("span", { children: "Job đang mở" }, void 0, false, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 69,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("strong", { children: formatNumber(dashboard.openJobCount) }, void 0, false, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 70,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+              lineNumber: 68,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("article", { className: "recruiter-kpi-card", children: [
+              /* @__PURE__ */ jsxDEV("span", { children: "Hồ sơ mới 7 ngày" }, void 0, false, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 73,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("strong", { children: formatNumber(dashboard.newApplicationCount) }, void 0, false, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 74,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+              lineNumber: 72,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("article", { className: "recruiter-kpi-card", children: [
+              /* @__PURE__ */ jsxDEV("span", { children: "Job sắp hết hạn" }, void 0, false, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 77,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("strong", { children: formatNumber(dashboard.expiringSoonJobCount) }, void 0, false, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 78,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+              lineNumber: 76,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("article", { className: "recruiter-kpi-card", children: [
+              /* @__PURE__ */ jsxDEV("span", { children: "Trạng thái đang xử lý" }, void 0, false, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 81,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("strong", { children: formatNumber(activeStatusCount) }, void 0, false, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 82,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+              lineNumber: 80,
+              columnNumber: 13
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+            lineNumber: 67,
+            columnNumber: 11
+          }, this),
+          /* @__PURE__ */ jsxDEV("section", { className: "recruiter-layout", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "recruiter-main-column", children: [
+              /* @__PURE__ */ jsxDEV("article", { className: "recruiter-panel", children: [
+                /* @__PURE__ */ jsxDEV("header", { className: "recruiter-panel-header", children: /* @__PURE__ */ jsxDEV("h2", { children: "Ứng viên theo trạng thái" }, void 0, false, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 90,
+                  columnNumber: 19
+                }, this) }, void 0, false, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 89,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDEV("div", { className: "recruiter-status-grid", children: Object.entries(dashboard.applicationStatusCounts || {}).map(
+                  ([status, count]) => /* @__PURE__ */ jsxDEV(
+                    Link,
+                    {
+                      to: `/recruiter/applications?status=${status}`,
+                      className: "recruiter-status-chip",
+                      children: [
+                        /* @__PURE__ */ jsxDEV("strong", { children: status }, void 0, false, {
+                          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                          lineNumber: 99,
+                          columnNumber: 23
+                        }, this),
+                        /* @__PURE__ */ jsxDEV("span", { children: formatNumber(count) }, void 0, false, {
+                          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                          lineNumber: 100,
+                          columnNumber: 23
+                        }, this)
+                      ]
+                    },
+                    status,
+                    true,
+                    {
+                      fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                      lineNumber: 94,
+                      columnNumber: 17
+                    },
+                    this
+                  )
+                ) }, void 0, false, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 92,
+                  columnNumber: 17
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 88,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("article", { className: "recruiter-panel", children: [
+                /* @__PURE__ */ jsxDEV("header", { className: "recruiter-panel-header", children: [
+                  /* @__PURE__ */ jsxDEV("h2", { children: "Ứng viên mới" }, void 0, false, {
+                    fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                    lineNumber: 108,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV(Link, { to: "/recruiter/applications", children: "Xem tất cả" }, void 0, false, {
+                    fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                    lineNumber: 109,
+                    columnNumber: 19
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 107,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDEV("div", { className: "recruiter-table", children: (dashboard.recentApplications || []).length > 0 ? dashboard.recentApplications.map(
+                  (application) => /* @__PURE__ */ jsxDEV(
+                    Link,
+                    {
+                      to: `/recruiter/applications/${application.id}`,
+                      className: "recruiter-table-row",
+                      children: [
+                        /* @__PURE__ */ jsxDEV("div", { children: [
+                          /* @__PURE__ */ jsxDEV("strong", { children: application.userName || "Ứng viên" }, void 0, false, {
+                            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                            lineNumber: 120,
+                            columnNumber: 27
+                          }, this),
+                          /* @__PURE__ */ jsxDEV("span", { children: application.jobTitle }, void 0, false, {
+                            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                            lineNumber: 121,
+                            columnNumber: 27
+                          }, this)
+                        ] }, void 0, true, {
+                          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                          lineNumber: 119,
+                          columnNumber: 25
+                        }, this),
+                        /* @__PURE__ */ jsxDEV("div", { children: [
+                          /* @__PURE__ */ jsxDEV("strong", { children: application.status }, void 0, false, {
+                            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                            lineNumber: 124,
+                            columnNumber: 27
+                          }, this),
+                          /* @__PURE__ */ jsxDEV("span", { children: formatDate(application.applicationDate) }, void 0, false, {
+                            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                            lineNumber: 125,
+                            columnNumber: 27
+                          }, this)
+                        ] }, void 0, true, {
+                          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                          lineNumber: 123,
+                          columnNumber: 25
+                        }, this),
+                        /* @__PURE__ */ jsxDEV("div", { children: [
+                          /* @__PURE__ */ jsxDEV("strong", { children: application.companyName }, void 0, false, {
+                            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                            lineNumber: 128,
+                            columnNumber: 27
+                          }, this),
+                          /* @__PURE__ */ jsxDEV("span", { children: application.hasCv ? "Có CV" : "Chưa có CV" }, void 0, false, {
+                            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                            lineNumber: 129,
+                            columnNumber: 27
+                          }, this)
+                        ] }, void 0, true, {
+                          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                          lineNumber: 127,
+                          columnNumber: 25
+                        }, this)
+                      ]
+                    },
+                    application.id,
+                    true,
+                    {
+                      fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                      lineNumber: 114,
+                      columnNumber: 17
+                    },
+                    this
+                  )
+                ) : /* @__PURE__ */ jsxDEV("p", { className: "recruiter-empty", children: "Chưa có hồ sơ mới." }, void 0, false, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 134,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 111,
+                  columnNumber: 17
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 106,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+              lineNumber: 87,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("aside", { className: "recruiter-side-column", children: [
+              /* @__PURE__ */ jsxDEV("article", { className: "recruiter-panel", children: [
+                /* @__PURE__ */ jsxDEV("header", { className: "recruiter-panel-header", children: [
+                  /* @__PURE__ */ jsxDEV("h2", { children: "Job sắp hết hạn" }, void 0, false, {
+                    fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                    lineNumber: 143,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV(Link, { to: "/recruiter/jobs?status=open", children: "Quản lý job" }, void 0, false, {
+                    fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                    lineNumber: 144,
+                    columnNumber: 19
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 142,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDEV("div", { className: "recruiter-side-list", children: (dashboard.expiringSoonJobs || []).length > 0 ? dashboard.expiringSoonJobs.map(
+                  (job) => /* @__PURE__ */ jsxDEV(Link, { to: `/recruiter/jobs?jobId=${job.id}`, className: "recruiter-side-card", children: [
+                    /* @__PURE__ */ jsxDEV("strong", { children: job.title }, void 0, false, {
+                      fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                      lineNumber: 150,
+                      columnNumber: 25
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { children: job.companyName }, void 0, false, {
+                      fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                      lineNumber: 151,
+                      columnNumber: 25
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("small", { children: [
+                      job.location || "Toàn quốc",
+                      " - Hạn ",
+                      formatDate(job.applicationDeadline)
+                    ] }, void 0, true, {
+                      fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                      lineNumber: 152,
+                      columnNumber: 25
+                    }, this)
+                  ] }, job.id, true, {
+                    fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                    lineNumber: 149,
+                    columnNumber: 17
+                  }, this)
+                ) : /* @__PURE__ */ jsxDEV("p", { className: "recruiter-empty", children: "Không có job sắp hết hạn." }, void 0, false, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 156,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 146,
+                  columnNumber: 17
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 141,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("article", { className: "recruiter-panel", children: [
+                /* @__PURE__ */ jsxDEV("header", { className: "recruiter-panel-header", children: [
+                  /* @__PURE__ */ jsxDEV("h2", { children: "Công ty đang quản lý" }, void 0, false, {
+                    fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                    lineNumber: 163,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV(Link, { to: "/recruiter/companies", children: "Quản lý" }, void 0, false, {
+                    fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                    lineNumber: 164,
+                    columnNumber: 19
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 162,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDEV("div", { className: "recruiter-side-list", children: (dashboard.managedCompanies || []).length > 0 ? dashboard.managedCompanies.map(
+                  (company) => /* @__PURE__ */ jsxDEV(Link, { to: "/recruiter/companies", className: "recruiter-company-card", children: [
+                    /* @__PURE__ */ jsxDEV("strong", { children: company.companyName }, void 0, false, {
+                      fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                      lineNumber: 170,
+                      columnNumber: 25
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { children: [
+                      formatNumber(company.jobCount),
+                      " job"
+                    ] }, void 0, true, {
+                      fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                      lineNumber: 171,
+                      columnNumber: 25
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("small", { children: [
+                      formatNumber(company.memberCount),
+                      " thành viên"
+                    ] }, void 0, true, {
+                      fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                      lineNumber: 172,
+                      columnNumber: 25
+                    }, this)
+                  ] }, company.companyId, true, {
+                    fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                    lineNumber: 169,
+                    columnNumber: 17
+                  }, this)
+                ) : /* @__PURE__ */ jsxDEV("p", { className: "recruiter-empty", children: "Chưa có công ty nào được gán." }, void 0, false, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 176,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                  lineNumber: 166,
+                  columnNumber: 17
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+                lineNumber: 161,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+              lineNumber: 140,
+              columnNumber: 13
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+            lineNumber: 86,
+            columnNumber: 11
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+          lineNumber: 66,
+          columnNumber: 7
+        }, this) : null
+      ]
+    },
+    void 0,
+    true,
+    {
+      fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx",
+      lineNumber: 57,
+      columnNumber: 5
+    },
+    this
+  );
+};
+_s(RecruiterDashboard, "SiXrE8UnnCt4PXl2jcClDVS5vZ8=");
+_c = RecruiterDashboard;
+export default RecruiterDashboard;
+var _c;
+$RefreshReg$(_c, "RecruiterDashboard");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/Thinhpa/Abackend/frontend/src/pages/recruiter/RecruiterDashboard.jsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUFBQSxzQkFBRTtBQUFBLHlCQUExQztBQUFBO0FBQUE7QUFBQTtBQUFBLDJCQUFxRDtBQUFBLHVCQUg1Q0YsUUFBUUcsV0FBbkI7QUFBQTtBQUFBO0FBQUE7QUFBQSx5QkFJQTtBQUFBLGdCQUNELElBRUQsdUJBQUMsT0FBRSxXQUFVLG1CQUFrQiw2Q0FBL0I7QUFBQTtBQUFBO0FBQUE7QUFBQSx1QkFBNEQsS0FWaEU7QUFBQTtBQUFBO0FBQUE7QUFBQSx1QkFZQTtBQUFBLG1CQWpCRjtBQUFBO0FBQUE7QUFBQTtBQUFBLHFCQWtCQTtBQUFBLGlCQXZDRjtBQUFBO0FBQUE7QUFBQTtBQUFBLG1CQXdDQTtBQUFBLGVBOUZGO0FBQUE7QUFBQTtBQUFBO0FBQUEsaUJBK0ZBO0FBQUEsYUFuSEY7QUFBQTtBQUFBO0FBQUE7QUFBQSxlQW9IQSxJQUNFO0FBQUE7QUFBQTtBQUFBLElBOUhOO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxFQStIQTtBQUVKO0FBQUUzQyxHQWhLSUQsb0JBQWtCO0FBQUEsS0FBbEJBO0FBa0tOLGVBQWVBO0FBQW1CLElBQUE2QztBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJ1c2VFZmZlY3QiLCJ1c2VNZW1vIiwidXNlU3RhdGUiLCJMaW5rIiwiYXBpUmVxdWVzdCIsIlJlY3J1aXRlckxheW91dCIsImZvcm1hdERhdGUiLCJmb3JtYXROdW1iZXIiLCJSZWNydWl0ZXJEYXNoYm9hcmQiLCJfcyIsImRhc2hib2FyZCIsInNldERhc2hib2FyZCIsImxvYWRpbmciLCJzZXRMb2FkaW5nIiwiZXJyb3IiLCJzZXRFcnJvciIsImFjdGl2ZSIsImxvYWREYXNoYm9hcmQiLCJkYXRhIiwiZXJyIiwibWVzc2FnZSIsImFjdGl2ZVN0YXR1c0NvdW50IiwiY291bnRzIiwiYXBwbGljYXRpb25TdGF0dXNDb3VudHMiLCJPYmplY3QiLCJlbnRyaWVzIiwiZmlsdGVyIiwiY291bnQiLCJOdW1iZXIiLCJsZW5ndGgiLCJvcGVuSm9iQ291bnQiLCJuZXdBcHBsaWNhdGlvbkNvdW50IiwiZXhwaXJpbmdTb29uSm9iQ291bnQiLCJtYXAiLCJzdGF0dXMiLCJyZWNlbnRBcHBsaWNhdGlvbnMiLCJhcHBsaWNhdGlvbiIsImlkIiwidXNlck5hbWUiLCJqb2JUaXRsZSIsImFwcGxpY2F0aW9uRGF0ZSIsImNvbXBhbnlOYW1lIiwiaGFzQ3YiLCJleHBpcmluZ1Nvb25Kb2JzIiwiam9iIiwidGl0bGUiLCJsb2NhdGlvbiIsImFwcGxpY2F0aW9uRGVhZGxpbmUiLCJtYW5hZ2VkQ29tcGFuaWVzIiwiY29tcGFueSIsImpvYkNvdW50IiwibWVtYmVyQ291bnQiLCJjb21wYW55SWQiLCJfYyJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJSZWNydWl0ZXJEYXNoYm9hcmQuanN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IHVzZUVmZmVjdCwgdXNlTWVtbywgdXNlU3RhdGUgfSBmcm9tIFwicmVhY3RcIjtcbmltcG9ydCB7IExpbmsgfSBmcm9tIFwicmVhY3Qtcm91dGVyLWRvbVwiO1xuaW1wb3J0IHsgYXBpUmVxdWVzdCB9IGZyb20gXCIuLi8uLi9saWIvYXBpLmpzXCI7XG5pbXBvcnQgUmVjcnVpdGVyTGF5b3V0IGZyb20gXCIuL1JlY3J1aXRlckxheW91dC5qc3hcIjtcbmltcG9ydCB7IGZvcm1hdERhdGUsIGZvcm1hdE51bWJlciB9IGZyb20gXCIuL3JlY3J1aXRlclV0aWxzLmpzXCI7XG5cbmNvbnN0IFJlY3J1aXRlckRhc2hib2FyZCA9ICgpID0+IHtcbiAgY29uc3QgW2Rhc2hib2FyZCwgc2V0RGFzaGJvYXJkXSA9IHVzZVN0YXRlKG51bGwpO1xuICBjb25zdCBbbG9hZGluZywgc2V0TG9hZGluZ10gPSB1c2VTdGF0ZSh0cnVlKTtcbiAgY29uc3QgW2Vycm9yLCBzZXRFcnJvcl0gPSB1c2VTdGF0ZShcIlwiKTtcblxuICB1c2VFZmZlY3QoKCkgPT4ge1xuICAgIGxldCBhY3RpdmUgPSB0cnVlO1xuICAgIGNvbnN0IGxvYWREYXNoYm9hcmQgPSBhc3luYyAoKSA9PiB7XG4gICAgICBzZXRMb2FkaW5nKHRydWUpO1xuICAgICAgc2V0RXJyb3IoXCJcIik7XG4gICAgICB0cnkge1xuICAgICAgICBjb25zdCBkYXRhID0gYXdhaXQgYXBpUmVxdWVzdChcIi9hcGkvcmVjcnVpdGVyL2Rhc2hib2FyZFwiKTtcbiAgICAgICAgaWYgKGFjdGl2ZSkgc2V0RGFzaGJvYXJkKGRhdGEgfHwgbnVsbCk7XG4gICAgICB9IGNhdGNoIChlcnIpIHtcbiAgICAgICAgaWYgKGFjdGl2ZSkgc2V0RXJyb3IoZXJyLm1lc3NhZ2UgfHwgXCJLaMO0bmcgdGjhu4MgdOG6o2kgZGFzaGJvYXJkXCIpO1xuICAgICAgfSBmaW5hbGx5IHtcbiAgICAgICAgaWYgKGFjdGl2ZSkgc2V0TG9hZGluZyhmYWxzZSk7XG4gICAgICB9XG4gICAgfTtcbiAgICBsb2FkRGFzaGJvYXJkKCk7XG4gICAgcmV0dXJuICgpID0+IHtcbiAgICAgIGFjdGl2ZSA9IGZhbHNlO1xuICAgIH07XG4gIH0sIFtdKTtcblxuICBjb25zdCBhY3RpdmVTdGF0dXNDb3VudCA9IHVzZU1lbW8oKCkgPT4ge1xuICAgIGNvbnN0IGNvdW50cyA9IGRhc2hib2FyZD8uYXBwbGljYXRpb25TdGF0dXNDb3VudHMgfHwge307XG4gICAgcmV0dXJuIE9iamVjdC5lbnRyaWVzKGNvdW50cykuZmlsdGVyKChbLCBjb3VudF0pID0+IE51bWJlcihjb3VudCkgPiAwKS5sZW5ndGg7XG4gIH0sIFtkYXNoYm9hcmRdKTtcblxuICByZXR1cm4gKFxuICAgIDxSZWNydWl0ZXJMYXlvdXRcbiAgICAgIHRpdGxlPVwiRGFzaGJvYXJkIHR1eeG7g24gZOG7pW5nXCJcbiAgICAgIGRlc2NyaXB0aW9uPVwiVOG7lW5nIHF1YW4gam9iLCDhu6luZyB2acOqbiB2w6AgY8O0bmcgdHkgxJFhbmcgcXXhuqNuIGzDvS5cIlxuICAgICAgYWN0aW9ucz17PExpbmsgdG89XCIvcmVjcnVpdGVyL2pvYnNcIiBjbGFzc05hbWU9XCJyZWNydWl0ZXItcHJpbWFyeS1hY3Rpb25cIj5U4bqhbyBqb2I8L0xpbms+fVxuICAgID5cbiAgICAgIHtsb2FkaW5nID8gPHAgY2xhc3NOYW1lPVwicmVjcnVpdGVyLXN0YXRlXCI+xJBhbmcgdOG6o2kgZGFzaGJvYXJkLi4uPC9wPiA6IG51bGx9XG4gICAgICB7IWxvYWRpbmcgJiYgZXJyb3IgPyA8cCBjbGFzc05hbWU9XCJyZWNydWl0ZXItc3RhdGUgZXJyb3JcIj57ZXJyb3J9PC9wPiA6IG51bGx9XG5cbiAgICAgIHshbG9hZGluZyAmJiAhZXJyb3IgJiYgZGFzaGJvYXJkID8gKFxuICAgICAgICA8PlxuICAgICAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT1cInJlY3J1aXRlci1rcGktZ3JpZFwiPlxuICAgICAgICAgICAgPGFydGljbGUgY2xhc3NOYW1lPVwicmVjcnVpdGVyLWtwaS1jYXJkXCI+XG4gICAgICAgICAgICAgIDxzcGFuPkpvYiDEkWFuZyBt4bufPC9zcGFuPlxuICAgICAgICAgICAgICA8c3Ryb25nPntmb3JtYXROdW1iZXIoZGFzaGJvYXJkLm9wZW5Kb2JDb3VudCl9PC9zdHJvbmc+XG4gICAgICAgICAgICA8L2FydGljbGU+XG4gICAgICAgICAgICA8YXJ0aWNsZSBjbGFzc05hbWU9XCJyZWNydWl0ZXIta3BpLWNhcmRcIj5cbiAgICAgICAgICAgICAgPHNwYW4+SOG7kyBzxqEgbeG7m2kgNyBuZ8OgeTwvc3Bhbj5cbiAgICAgICAgICAgICAgPHN0cm9uZz57Zm9ybWF0TnVtYmVyKGRhc2hib2FyZC5uZXdBcHBsaWNhdGlvbkNvdW50KX08L3N0cm9uZz5cbiAgICAgICAgICAgIDwvYXJ0aWNsZT5cbiAgICAgICAgICAgIDxhcnRpY2xlIGNsYXNzTmFtZT1cInJlY3J1aXRlci1rcGktY2FyZFwiPlxuICAgICAgICAgICAgICA8c3Bhbj5Kb2Igc+G6r3AgaOG6v3QgaOG6oW48L3NwYW4+XG4gICAgICAgICAgICAgIDxzdHJvbmc+e2Zvcm1hdE51bWJlcihkYXNoYm9hcmQuZXhwaXJpbmdTb29uSm9iQ291bnQpfTwvc3Ryb25nPlxuICAgICAgICAgICAgPC9hcnRpY2xlPlxuICAgICAgICAgICAgPGFydGljbGUgY2xhc3NOYW1lPVwicmVjcnVpdGVyLWtwaS1jYXJkXCI+XG4gICAgICAgICAgICAgIDxzcGFuPlRy4bqhbmcgdGjDoWkgxJFhbmcgeOG7rSBsw708L3NwYW4+XG4gICAgICAgICAgICAgIDxzdHJvbmc+e2Zvcm1hdE51bWJlcihhY3RpdmVTdGF0dXNDb3VudCl9PC9zdHJvbmc+XG4gICAgICAgICAgICA8L2FydGljbGU+XG4gICAgICAgICAgPC9zZWN0aW9uPlxuXG4gICAgICAgICAgPHNlY3Rpb24gY2xhc3NOYW1lPVwicmVjcnVpdGVyLWxheW91dFwiPlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJyZWNydWl0ZXItbWFpbi1jb2x1bW5cIj5cbiAgICAgICAgICAgICAgPGFydGljbGUgY2xhc3NOYW1lPVwicmVjcnVpdGVyLXBhbmVsXCI+XG4gICAgICAgICAgICAgICAgPGhlYWRlciBjbGFzc05hbWU9XCJyZWNydWl0ZXItcGFuZWwtaGVhZGVyXCI+XG4gICAgICAgICAgICAgICAgICA8aDI+4buobmcgdmnDqm4gdGhlbyB0cuG6oW5nIHRow6FpPC9oMj5cbiAgICAgICAgICAgICAgICA8L2hlYWRlcj5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInJlY3J1aXRlci1zdGF0dXMtZ3JpZFwiPlxuICAgICAgICAgICAgICAgICAge09iamVjdC5lbnRyaWVzKGRhc2hib2FyZC5hcHBsaWNhdGlvblN0YXR1c0NvdW50cyB8fCB7fSkubWFwKChbc3RhdHVzLCBjb3VudF0pID0+IChcbiAgICAgICAgICAgICAgICAgICAgPExpbmtcbiAgICAgICAgICAgICAgICAgICAgICBrZXk9e3N0YXR1c31cbiAgICAgICAgICAgICAgICAgICAgICB0bz17YC9yZWNydWl0ZXIvYXBwbGljYXRpb25zP3N0YXR1cz0ke3N0YXR1c31gfVxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInJlY3J1aXRlci1zdGF0dXMtY2hpcFwiXG4gICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICA8c3Ryb25nPntzdGF0dXN9PC9zdHJvbmc+XG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4+e2Zvcm1hdE51bWJlcihjb3VudCl9PC9zcGFuPlxuICAgICAgICAgICAgICAgICAgICA8L0xpbms+XG4gICAgICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgPC9hcnRpY2xlPlxuXG4gICAgICAgICAgICAgIDxhcnRpY2xlIGNsYXNzTmFtZT1cInJlY3J1aXRlci1wYW5lbFwiPlxuICAgICAgICAgICAgICAgIDxoZWFkZXIgY2xhc3NOYW1lPVwicmVjcnVpdGVyLXBhbmVsLWhlYWRlclwiPlxuICAgICAgICAgICAgICAgICAgPGgyPuG7qG5nIHZpw6puIG3hu5tpPC9oMj5cbiAgICAgICAgICAgICAgICAgIDxMaW5rIHRvPVwiL3JlY3J1aXRlci9hcHBsaWNhdGlvbnNcIj5YZW0gdOG6pXQgY+G6ozwvTGluaz5cbiAgICAgICAgICAgICAgICA8L2hlYWRlcj5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInJlY3J1aXRlci10YWJsZVwiPlxuICAgICAgICAgICAgICAgICAgeyhkYXNoYm9hcmQucmVjZW50QXBwbGljYXRpb25zIHx8IFtdKS5sZW5ndGggPiAwID8gKFxuICAgICAgICAgICAgICAgICAgICBkYXNoYm9hcmQucmVjZW50QXBwbGljYXRpb25zLm1hcCgoYXBwbGljYXRpb24pID0+IChcbiAgICAgICAgICAgICAgICAgICAgICA8TGlua1xuICAgICAgICAgICAgICAgICAgICAgICAga2V5PXthcHBsaWNhdGlvbi5pZH1cbiAgICAgICAgICAgICAgICAgICAgICAgIHRvPXtgL3JlY3J1aXRlci9hcHBsaWNhdGlvbnMvJHthcHBsaWNhdGlvbi5pZH1gfVxuICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwicmVjcnVpdGVyLXRhYmxlLXJvd1wiXG4gICAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgPHN0cm9uZz57YXBwbGljYXRpb24udXNlck5hbWUgfHwgXCLhu6huZyB2acOqblwifTwvc3Ryb25nPlxuICAgICAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj57YXBwbGljYXRpb24uam9iVGl0bGV9PC9zcGFuPlxuICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgICAgICAgICAgICAgICA8c3Ryb25nPnthcHBsaWNhdGlvbi5zdGF0dXN9PC9zdHJvbmc+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxzcGFuPntmb3JtYXREYXRlKGFwcGxpY2F0aW9uLmFwcGxpY2F0aW9uRGF0ZSl9PC9zcGFuPlxuICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgICAgICAgICAgICAgICA8c3Ryb25nPnthcHBsaWNhdGlvbi5jb21wYW55TmFtZX08L3N0cm9uZz5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4+e2FwcGxpY2F0aW9uLmhhc0N2ID8gXCJDw7MgQ1ZcIiA6IFwiQ2jGsGEgY8OzIENWXCJ9PC9zcGFuPlxuICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICAgICAgPC9MaW5rPlxuICAgICAgICAgICAgICAgICAgICApKVxuICAgICAgICAgICAgICAgICAgKSA6IChcbiAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwicmVjcnVpdGVyLWVtcHR5XCI+Q2jGsGEgY8OzIGjhu5Mgc8ahIG3hu5tpLjwvcD5cbiAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDwvYXJ0aWNsZT5cbiAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICA8YXNpZGUgY2xhc3NOYW1lPVwicmVjcnVpdGVyLXNpZGUtY29sdW1uXCI+XG4gICAgICAgICAgICAgIDxhcnRpY2xlIGNsYXNzTmFtZT1cInJlY3J1aXRlci1wYW5lbFwiPlxuICAgICAgICAgICAgICAgIDxoZWFkZXIgY2xhc3NOYW1lPVwicmVjcnVpdGVyLXBhbmVsLWhlYWRlclwiPlxuICAgICAgICAgICAgICAgICAgPGgyPkpvYiBz4bqvcCBo4bq/dCBo4bqhbjwvaDI+XG4gICAgICAgICAgICAgICAgICA8TGluayB0bz1cIi9yZWNydWl0ZXIvam9icz9zdGF0dXM9b3BlblwiPlF14bqjbiBsw70gam9iPC9MaW5rPlxuICAgICAgICAgICAgICAgIDwvaGVhZGVyPlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicmVjcnVpdGVyLXNpZGUtbGlzdFwiPlxuICAgICAgICAgICAgICAgICAgeyhkYXNoYm9hcmQuZXhwaXJpbmdTb29uSm9icyB8fCBbXSkubGVuZ3RoID4gMCA/IChcbiAgICAgICAgICAgICAgICAgICAgZGFzaGJvYXJkLmV4cGlyaW5nU29vbkpvYnMubWFwKChqb2IpID0+IChcbiAgICAgICAgICAgICAgICAgICAgICA8TGluayBrZXk9e2pvYi5pZH0gdG89e2AvcmVjcnVpdGVyL2pvYnM/am9iSWQ9JHtqb2IuaWR9YH0gY2xhc3NOYW1lPVwicmVjcnVpdGVyLXNpZGUtY2FyZFwiPlxuICAgICAgICAgICAgICAgICAgICAgICAgPHN0cm9uZz57am9iLnRpdGxlfTwvc3Ryb25nPlxuICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4+e2pvYi5jb21wYW55TmFtZX08L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgICAgICA8c21hbGw+e2pvYi5sb2NhdGlvbiB8fCBcIlRvw6BuIHF14buRY1wifSAtIEjhuqFuIHtmb3JtYXREYXRlKGpvYi5hcHBsaWNhdGlvbkRlYWRsaW5lKX08L3NtYWxsPlxuICAgICAgICAgICAgICAgICAgICAgIDwvTGluaz5cbiAgICAgICAgICAgICAgICAgICAgKSlcbiAgICAgICAgICAgICAgICAgICkgOiAoXG4gICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInJlY3J1aXRlci1lbXB0eVwiPktow7RuZyBjw7Mgam9iIHPhuq9wIGjhur90IGjhuqFuLjwvcD5cbiAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDwvYXJ0aWNsZT5cblxuICAgICAgICAgICAgICA8YXJ0aWNsZSBjbGFzc05hbWU9XCJyZWNydWl0ZXItcGFuZWxcIj5cbiAgICAgICAgICAgICAgICA8aGVhZGVyIGNsYXNzTmFtZT1cInJlY3J1aXRlci1wYW5lbC1oZWFkZXJcIj5cbiAgICAgICAgICAgICAgICAgIDxoMj5Dw7RuZyB0eSDEkWFuZyBxdeG6o24gbMO9PC9oMj5cbiAgICAgICAgICAgICAgICAgIDxMaW5rIHRvPVwiL3JlY3J1aXRlci9jb21wYW5pZXNcIj5RdeG6o24gbMO9PC9MaW5rPlxuICAgICAgICAgICAgICAgIDwvaGVhZGVyPlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicmVjcnVpdGVyLXNpZGUtbGlzdFwiPlxuICAgICAgICAgICAgICAgICAgeyhkYXNoYm9hcmQubWFuYWdlZENvbXBhbmllcyB8fCBbXSkubGVuZ3RoID4gMCA/IChcbiAgICAgICAgICAgICAgICAgICAgZGFzaGJvYXJkLm1hbmFnZWRDb21wYW5pZXMubWFwKChjb21wYW55KSA9PiAoXG4gICAgICAgICAgICAgICAgICAgICAgPExpbmsga2V5PXtjb21wYW55LmNvbXBhbnlJZH0gdG89XCIvcmVjcnVpdGVyL2NvbXBhbmllc1wiIGNsYXNzTmFtZT1cInJlY3J1aXRlci1jb21wYW55LWNhcmRcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxzdHJvbmc+e2NvbXBhbnkuY29tcGFueU5hbWV9PC9zdHJvbmc+XG4gICAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj57Zm9ybWF0TnVtYmVyKGNvbXBhbnkuam9iQ291bnQpfSBqb2I8L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgICAgICA8c21hbGw+e2Zvcm1hdE51bWJlcihjb21wYW55Lm1lbWJlckNvdW50KX0gdGjDoG5oIHZpw6puPC9zbWFsbD5cbiAgICAgICAgICAgICAgICAgICAgICA8L0xpbms+XG4gICAgICAgICAgICAgICAgICAgICkpXG4gICAgICAgICAgICAgICAgICApIDogKFxuICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJyZWNydWl0ZXItZW1wdHlcIj5DaMawYSBjw7MgY8O0bmcgdHkgbsOgbyDEkcaw4bujYyBnw6FuLjwvcD5cbiAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDwvYXJ0aWNsZT5cbiAgICAgICAgICAgIDwvYXNpZGU+XG4gICAgICAgICAgPC9zZWN0aW9uPlxuICAgICAgICA8Lz5cbiAgICAgICkgOiBudWxsfVxuICAgIDwvUmVjcnVpdGVyTGF5b3V0PlxuICApO1xufTtcblxuZXhwb3J0IGRlZmF1bHQgUmVjcnVpdGVyRGFzaGJvYXJkO1xuIl0sImZpbGUiOiJDOi9Vc2Vycy9UaGluaHBhL0FiYWNrZW5kL2Zyb250ZW5kL3NyYy9wYWdlcy9yZWNydWl0ZXIvUmVjcnVpdGVyRGFzaGJvYXJkLmpzeCJ9

@@ -62,7 +62,16 @@ const iconPaths = {
 };
 
 const HeaderIcon = ({ name, className = "" }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.9"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     {iconPaths[name]}
   </svg>
 );
@@ -87,7 +96,7 @@ const menuSections = [
     ]
   },
   {
-    title: "Quản lý CV & Cover letter",
+    title: "Quản lý CV & Cover Letter",
     icon: "cv",
     items: [
       { label: "CV của tôi", actionLabel: "CV của tôi" },
@@ -105,7 +114,7 @@ const menuSections = [
     ]
   },
   {
-    title: "Cá nhân & Bảo mật",
+    title: "Cá nhân & bảo mật",
     icon: "shield",
     items: [
       { label: "Thông tin cá nhân", to: "/user/profile" },
@@ -126,11 +135,11 @@ const HomeHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     "Cài đặt email & thông báo": true,
-    "Cá nhân & Bảo mật": true
+    "Cá nhân & bảo mật": true
   });
   const [profile, setProfile] = useState(null);
   const [recruiterUnreadCount, setRecruiterUnreadCount] = useState(0);
-  const [recruiterApplicationCount, setRecruiterApplicationCount] = useState(0);
+  const [messageUnreadCount, setMessageUnreadCount] = useState(0);
 
   const token = localStorage.getItem("ttjobs_token");
   const isLoggedIn = Boolean(token);
@@ -139,7 +148,7 @@ const HomeHeader = () => {
     if (!isLoggedIn) {
       setProfile(null);
       setRecruiterUnreadCount(0);
-      setRecruiterApplicationCount(0);
+      setMessageUnreadCount(0);
       setIsMenuOpen(false);
       return;
     }
@@ -199,39 +208,53 @@ const HomeHeader = () => {
   const isRecruiterRole = role === "RECRUITER" || role === "ADMIN";
 
   useEffect(() => {
-    if (!isLoggedIn || !isRecruiterRole) {
+    if (!isLoggedIn) {
       setRecruiterUnreadCount(0);
-      setRecruiterApplicationCount(0);
+      setMessageUnreadCount(0);
       return;
     }
 
     let active = true;
 
-    const loadRecruiterShortcuts = async () => {
+    const loadHeaderShortcuts = async () => {
       try {
-        const [dashboardResult, unreadResult] = await Promise.allSettled([
-          apiRequest("/api/recruiter/dashboard"),
-          apiRequest("/api/notifications/unread-count"),
-        ]);
+        const requests = [
+          apiRequest("/api/conversations"),
+          isRecruiterRole ? apiRequest("/api/notifications/unread-count") : Promise.resolve({ unreadCount: 0 })
+        ];
+        const [conversationResult, notificationResult] = await Promise.allSettled(requests);
 
-        if (active && dashboardResult.status === "fulfilled") {
-          setRecruiterApplicationCount(Number(dashboardResult.value?.newApplicationCount || 0));
+        if (active && conversationResult.status === "fulfilled") {
+          const conversations = Array.isArray(conversationResult.value) ? conversationResult.value : [];
+          const unreadTotal = conversations.reduce(
+            (total, conversation) => total + Number(conversation?.unreadCount || 0),
+            0
+          );
+          setMessageUnreadCount(unreadTotal);
         }
-        if (active && unreadResult.status === "fulfilled") {
-          setRecruiterUnreadCount(Number(unreadResult.value?.unreadCount || 0));
+
+        if (active && notificationResult.status === "fulfilled") {
+          setRecruiterUnreadCount(Number(notificationResult.value?.unreadCount || 0));
         }
       } catch {
         if (active) {
           setRecruiterUnreadCount(0);
-          setRecruiterApplicationCount(0);
+          setMessageUnreadCount(0);
         }
       }
     };
 
-    loadRecruiterShortcuts();
+    loadHeaderShortcuts();
+
+    const handleMessagesChanged = () => {
+      loadHeaderShortcuts();
+    };
+
+    window.addEventListener("ttjobs:messages-changed", handleMessagesChanged);
 
     return () => {
       active = false;
+      window.removeEventListener("ttjobs:messages-changed", handleMessagesChanged);
     };
   }, [isLoggedIn, isRecruiterRole]);
 
@@ -302,13 +325,14 @@ const HomeHeader = () => {
           {isLoggedIn && !isRecruiterRole ? (
             <Link className="icon-btn user-quick-icon" to="/messages" aria-label="Tin nhắn">
               <HeaderIcon name="chat" className="header-action-icon" />
+              {messageUnreadCount > 0 ? <span className="icon-badge">{messageUnreadCount}</span> : null}
             </Link>
           ) : null}
           {isRecruiterRole ? (
             <>
               <Link className="icon-btn recruiter-quick-icon" to="/recruiter/chat" aria-label="Trò chuyện">
                 <HeaderIcon name="chat" className="header-action-icon" />
-                {recruiterApplicationCount > 0 ? <span className="icon-badge">{recruiterApplicationCount}</span> : null}
+                {messageUnreadCount > 0 ? <span className="icon-badge">{messageUnreadCount}</span> : null}
               </Link>
               <Link className="icon-btn recruiter-quick-icon" to="/recruiter/notifications" aria-label="Thông báo">
                 <HeaderIcon name="bell" className="header-action-icon" />

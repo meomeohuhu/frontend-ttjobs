@@ -140,7 +140,7 @@ const CompanyDetail = () => {
       setShowLocationPicker(false);
 
       try {
-        const payload = await apiRequest(`/api/companies/${id}/public-page`);
+        const payload = await apiRequest(`/api/companies/${id}/public-page`, { skipAuth: true });
         if (!active) return;
 
         const companyData = payload?.company || null;
@@ -271,7 +271,7 @@ const CompanyDetail = () => {
       setSearchTouched(true);
 
       try {
-        const data = await apiRequest(`/api/jobs/search?${query.toString()}`);
+        const data = await apiRequest(`/api/jobs/search?${query.toString()}`, { skipAuth: true });
         setDisplayJobs(Array.isArray(data) ? data : []);
       } catch (err) {
         setSearchError(err.message || "Không thể tìm kiếm");

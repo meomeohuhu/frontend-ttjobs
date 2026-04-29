@@ -11,6 +11,15 @@ const categories = [
   "CUSTOMER-SERVICE"
 ];
 
+const categoryLabels = {
+  DESIGN: "Design",
+  MARKETING: "Marketing",
+  HR: "HR",
+  "INFORMATION-TECHNOLOGY": "IT",
+  SALES: "Sales",
+  "CUSTOMER-SERVICE": "CSKH"
+};
+
 const fallbackLocationGroups = [
   {
     code: 1,
@@ -35,6 +44,7 @@ const fallbackLocationGroups = [
 ];
 
 const formatCategory = (value) =>
+  categoryLabels[value] ||
   value
     .toLowerCase()
     .replace(/-/g, " ")
@@ -108,13 +118,11 @@ const HeroSearch = () => {
     const loadHeroStats = async () => {
       try {
         const [jobsResult, companiesResult] = await Promise.allSettled([
-          apiRequest("/api/jobs"),
-          apiRequest("/api/companies")
+          apiRequest("/api/jobs", { skipAuth: true }),
+          apiRequest("/api/companies", { skipAuth: true })
         ]);
 
-        if (!active) {
-          return;
-        }
+        if (!active) return;
 
         if (jobsResult.status === "fulfilled" && Array.isArray(jobsResult.value)) {
           const openJobs = jobsResult.value.filter((job) => (job?.status || "").toLowerCase() === "open");
@@ -124,10 +132,7 @@ const HeroSearch = () => {
             .sort((left, right) => Number(right?.savedCount || 0) - Number(left?.savedCount || 0))
             .filter((job) => job?.title)
             .slice(0, 3)
-            .map((job) => ({
-              title: job.title,
-              count: Number(job.savedCount || 0)
-            }));
+            .map((job) => ({ title: job.title, count: Number(job.savedCount || 0) }));
 
           if (rankedPositions.length > 0) {
             setHotPositions(rankedPositions);
@@ -138,9 +143,7 @@ const HeroSearch = () => {
           setEmployerCount(formatCount(companiesResult.value.length) || "1.800+");
         }
       } catch {
-        if (!active) {
-          return;
-        }
+        // Keep fallback stats.
       }
     };
 
@@ -153,44 +156,29 @@ const HeroSearch = () => {
   }, []);
 
   useEffect(() => {
-    if (hotPositions.length <= 1) {
-      return undefined;
-    }
-
+    if (hotPositions.length <= 1) return undefined;
     const intervalId = window.setInterval(() => {
       setActiveHotIndex((currentIndex) => (currentIndex + 1) % hotPositions.length);
     }, 4500);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
+    return () => window.clearInterval(intervalId);
   }, [hotPositions.length]);
 
   useEffect(() => {
     const handlePointerDown = (event) => {
       const formElement = searchFormRef.current;
-      if (!formElement) {
-        return;
-      }
-
-      if (!formElement.contains(event.target)) {
+      if (formElement && !formElement.contains(event.target)) {
         setShowCategories(false);
         setShowLocationPicker(false);
       }
     };
 
     document.addEventListener("pointerdown", handlePointerDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-    };
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, []);
 
   const filteredLocationGroups = useMemo(() => {
     const query = provinceQuery.trim().toLowerCase();
-    if (!query) {
-      return locationGroups;
-    }
+    if (!query) return locationGroups;
     return locationGroups.filter((group) => group.province.toLowerCase().includes(query));
   }, [locationGroups, provinceQuery]);
 
@@ -199,21 +187,26 @@ const HeroSearch = () => {
     : selectedProvince || "Địa điểm";
 
   const selectedProvinceEntry = useMemo(() => {
-    if (!selectedProvinceCode) {
-      return null;
-    }
+    if (!selectedProvinceCode) return null;
     return locationGroups.find((group) => group.code === selectedProvinceCode) || null;
   }, [locationGroups, selectedProvinceCode]);
 
   const hotSlides = hotPositions.length > 0 ? hotPositions : [{ title: "Java Backend Developer", count: 18 }];
+  const activeHotSlide = hotSlides[activeHotIndex] || hotSlides[0];
+  const activeHotCount = activeHotSlide?.count || hotSlides[0]?.count || 0;
+  const resultSummary = useMemo(() => {
+    if (results.length === 0) return "";
+    const parts = [];
+    if (keyword.trim()) parts.push(`từ khóa "${keyword.trim()}"`);
+    if (activeCategory) parts.push(`ngành ${formatCategory(activeCategory)}`);
+    if (selectedDistrict || selectedProvince) parts.push(`khu vực ${selectedDistrict || selectedProvince}`);
+    return parts.length > 0 ? `Gợi ý theo ${parts.join(", ")}.` : "Gợi ý nhanh từ dữ liệu tuyển dụng mới nhất.";
+  }, [results.length, keyword, activeCategory, selectedDistrict, selectedProvince]);
 
   const goToHotSlide = (nextIndex) => {
     const total = hotSlides.length;
-    if (total === 0) {
-      return;
-    }
-    const normalizedIndex = ((nextIndex % total) + total) % total;
-    setActiveHotIndex(normalizedIndex);
+    if (total === 0) return;
+    setActiveHotIndex(((nextIndex % total) + total) % total);
   };
 
   const runSearch = async (payload = {}, options = {}) => {
@@ -230,10 +223,10 @@ const HeroSearch = () => {
     setLoading(true);
     setError("");
     try {
-      const data = await apiRequest(`/api/jobs/search?${query.toString()}`);
+      const data = await apiRequest(`/api/jobs/search?${query.toString()}`, { skipAuth: true });
       setResults(Array.isArray(data) ? data.slice(0, 5) : []);
     } catch (err) {
-      setError(err.message || "Không thể tìm kiếm");
+      setError(err.message || "Không thể tìm kiếm lúc này.");
     } finally {
       setLoading(false);
       if (scrollToResults) {
@@ -248,28 +241,24 @@ const HeroSearch = () => {
     event.preventDefault();
     setShowCategories(false);
     setShowLocationPicker(false);
-    runSearch();
+    runSearch({}, { scrollToResults: true });
   };
 
   const handleCategoryClick = (value) => {
     setActiveCategory(value);
-    runSearch({ keyword: "", category: value });
+    runSearch({ keyword: "", category: value }, { scrollToResults: true });
   };
 
-  const handleProvinceSelect = async (group) => {
+  const handleProvinceSelect = (group) => {
     setSelectedProvince(group.province);
     setSelectedProvinceCode(group.code);
     setSelectedDistrict("");
   };
 
-  const handleDistrictSelect = (district) => {
-    setSelectedDistrict(district);
-  };
-
   const applyLocation = () => {
     setShowLocationPicker(false);
     if (selectedDistrict || selectedProvince) {
-      runSearch({ location: selectedDistrict || selectedProvince });
+      runSearch({ location: selectedDistrict || selectedProvince }, { scrollToResults: true });
     }
   };
 
@@ -286,21 +275,14 @@ const HeroSearch = () => {
         <div className="hero-content hero-layout">
           <div className="hero-copy">
             <span className="hero-kicker">TTJobs Match Engine</span>
-            <h1>Tìm đúng việc, đúng nhịp, đúng người.</h1>
+            <h1>Tìm đúng việc và đúng cơ hội để đi nhanh hơn.</h1>
             <p>
-              TTJobs kết nối bạn với cơ hội phù hợp hơn nhờ tìm kiếm nhanh, gợi ý theo kỹ năng và bộ
-              lọc tinh gọn.
+              Bắt đầu với bộ lọc gọn, dữ liệu tuyển dụng thật và các gợi ý đủ sát để bạn chọn nhanh những cơ hội đáng mở tiếp.
             </p>
 
             <form ref={searchFormRef} className="search-bar" onSubmit={handleSubmit}>
               <div className="search-pill-wrap">
-                <button
-                  type="button"
-                  className="search-pill"
-                  onClick={() => {
-                    setShowCategories((prev) => !prev);
-                  }}
-                >
+                <button type="button" className="search-pill" onClick={() => setShowCategories((prev) => !prev)}>
                   <span className="search-icon menu" />
                   {activeCategory ? formatCategory(activeCategory) : "Danh mục nghề"}
                   <span className="caret" />
@@ -333,13 +315,7 @@ const HeroSearch = () => {
               />
 
               <div className="search-location-wrap">
-                <button
-                  type="button"
-                  className="search-location-toggle"
-                  onClick={() => {
-                    setShowLocationPicker((prev) => !prev);
-                  }}
-                >
+                <button type="button" className="search-location-toggle" onClick={() => setShowLocationPicker((prev) => !prev)}>
                   <span className="search-icon pin" />
                   <span className="search-location-label">{selectedLocationLabel}</span>
                   <span className="caret" />
@@ -349,9 +325,7 @@ const HeroSearch = () => {
                   <div className="location-picker">
                     <div className="location-picker-head">
                       <span>Tìm theo:</span>
-                      <button type="button" className="location-mode active">
-                        Tỉnh, Quận/huyện
-                      </button>
+                      <button type="button" className="location-mode active">Tỉnh, quận/huyện</button>
                     </div>
 
                     <div className="location-picker-search">
@@ -391,7 +365,7 @@ const HeroSearch = () => {
                                   key={district}
                                   type="button"
                                   className={district === selectedDistrict ? "active" : ""}
-                                  onClick={() => handleDistrictSelect(district)}
+                                  onClick={() => setSelectedDistrict(district)}
                                 >
                                   {district}
                                 </button>
@@ -401,19 +375,15 @@ const HeroSearch = () => {
                         ) : (
                           <div className="district-empty">
                             <div className="district-empty-illustration" />
-                            <p>Vui lòng chọn Tỉnh/Thành phố</p>
+                            <p>Vui lòng chọn tỉnh/thành phố trước khi áp dụng bộ lọc.</p>
                           </div>
                         )}
                       </div>
                     </div>
 
                     <div className="location-picker-footer">
-                      <button type="button" className="location-clear" onClick={clearLocation}>
-                        Bỏ chọn tất cả
-                      </button>
-                      <button type="button" className="location-apply" onClick={applyLocation}>
-                        Áp dụng
-                      </button>
+                      <button type="button" className="location-clear" onClick={clearLocation}>Bỏ chọn tất cả</button>
+                      <button type="button" className="location-apply" onClick={applyLocation}>Áp dụng</button>
                     </div>
                   </div>
                 ) : null}
@@ -421,18 +391,13 @@ const HeroSearch = () => {
 
               <button type="submit" className="search-btn" disabled={loading}>
                 <span className="search-icon magnify" />
-                {loading ? "Đang tìm" : "Tìm kiếm"}
+                {loading ? "Đang tìm..." : "Tìm việc"}
               </button>
             </form>
 
             <div className="hero-chips">
               {categories.slice(0, 4).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className="hero-chip"
-                  onClick={() => handleCategoryClick(item)}
-                >
+                <button key={item} type="button" className="hero-chip" onClick={() => handleCategoryClick(item)}>
                   {formatCategory(item)}
                 </button>
               ))}
@@ -441,63 +406,37 @@ const HeroSearch = () => {
 
           <div className="hero-panel">
             <div className="hero-stat-card">
-              <div>
-                <span>Việc làm đang mở</span>
-                <strong>{openJobsCount}</strong>
-              </div>
-              <div>
-                <span>Nhà tuyển dụng</span>
-                <strong>{employerCount}</strong>
-              </div>
-              <div>
-                <span>Tỷ lệ phù hợp</span>
-                <strong>92%</strong>
-              </div>
+              <div><span>Việc làm đang mở</span><strong>{openJobsCount}</strong></div>
+              <div><span>Nhà tuyển dụng</span><strong>{employerCount}</strong></div>
+              <div><span>Lượt lưu nổi bật</span><strong>{activeHotCount}+</strong></div>
             </div>
 
             <div className="hero-spotlight">
-              <div className="carousel-badge">Đề xuất hôm nay</div>
+              <div className="carousel-badge">Nhóm việc đang được quan tâm</div>
               <div className="hot-slider">
-                <button
-                  type="button"
-                  className="hot-slider-arrow"
-                  onClick={() => goToHotSlide(activeHotIndex - 1)}
-                  aria-label="Vị trí trước"
-                >
+                <button type="button" className="hot-slider-arrow hero-card-arrow" onClick={() => goToHotSlide(activeHotIndex - 1)} aria-label="Vị trí trước">
                   <span />
                 </button>
 
                 <div className="hot-slider-viewport">
-                  <div
-                    className="hot-slider-track"
-                    style={{ transform: `translateX(-${activeHotIndex * 100}%)` }}
+                  <button
+                    type="button"
+                    className="hot-slide hot-slide-button hero-suggestion-card hero-insight-card"
+                    key={`${activeHotSlide.title}-${activeHotIndex}`}
+                    onClick={() => {
+                      setKeyword(activeHotSlide.title);
+                      setActiveCategory("");
+                      runSearch({ keyword: activeHotSlide.title }, { scrollToResults: true });
+                    }}
+                    aria-label={`Tìm việc cho nhóm vị trí ${activeHotSlide.title}`}
                   >
-                    {hotSlides.map((item, index) => (
-                      <button
-                        type="button"
-                        className="hot-slide hot-slide-button"
-                        key={`${item.title}-${index}`}
-                        onClick={() => {
-                          setKeyword(item.title);
-                          setActiveCategory("");
-                          runSearch({ keyword: item.title }, { scrollToResults: true });
-                        }}
-                        aria-label={`Tìm việc cho nhóm vị trí ${item.title}`}
-                      >
-                        <p>Nhóm vị trí đang hot</p>
-                        <h3>{item.title}</h3>
-                        <span>{item.count} lượt lưu công việc</span>
-                      </button>
-                    ))}
-                  </div>
+                    <p className="hero-suggestion-eyebrow">Từ dữ liệu lưu việc làm thực tế</p>
+                    <h3 className="hero-suggestion-title hero-insight-title">{activeHotSlide.title}</h3>
+                    <span className="hero-suggestion-meta">{activeHotSlide.count} lượt lưu gần đây</span>
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  className="hot-slider-arrow"
-                  onClick={() => goToHotSlide(activeHotIndex + 1)}
-                  aria-label="Vị trí sau"
-                >
+                <button type="button" className="hot-slider-arrow hero-card-arrow" onClick={() => goToHotSlide(activeHotIndex + 1)} aria-label="Vị trí sau">
                   <span />
                 </button>
               </div>
@@ -522,7 +461,10 @@ const HeroSearch = () => {
         {results.length > 0 ? (
           <div className="search-results" ref={searchResultsRef}>
             <div className="results-head">
-              <strong>Kết quả gợi ý</strong>
+              <div>
+                <strong>Gợi ý phù hợp để bạn mở tiếp</strong>
+                <p>{resultSummary}</p>
+              </div>
               <span>{results.length} việc làm</span>
             </div>
             {results.map((job) => (
@@ -537,9 +479,7 @@ const HeroSearch = () => {
           </div>
         ) : null}
 
-        <div className="hero-footer-note">
-          Gợi ý theo kỹ năng, vị trí và mức lương để bạn lọc nhanh hơn.
-        </div>
+        <div className="hero-footer-note">Gợi ý theo kỹ năng, vị trí và khu vực để bạn lọc nhanh hơn mà không phải mở quá nhiều trang.</div>
       </div>
     </section>
   );

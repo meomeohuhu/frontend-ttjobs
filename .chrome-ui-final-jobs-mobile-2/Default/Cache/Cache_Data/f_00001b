@@ -1,0 +1,246 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=4c443d75"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=4c443d75"; const useState = __vite__cjsImport3_react["useState"];
+import { apiRequest } from "/@fs/C:/Users/Thinhpa/Abackend/frontend/src/lib/api.js";
+import SettingsLayout from "/@fs/C:/Users/Thinhpa/Abackend/frontend/src/pages/user/SettingsLayout.jsx";
+const initialForm = {
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: ""
+};
+const PasswordSettings = () => {
+  _s();
+  const [form, setForm] = useState(initialForm);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setMessage("");
+    setError("");
+    if (form.newPassword !== form.confirmPassword) {
+      setSaving(false);
+      setError("Mật khẩu mới và xác nhận mật khẩu phải trùng nhau.");
+      return;
+    }
+    try {
+      await apiRequest("/api/users/me/password", {
+        method: "PUT",
+        body: JSON.stringify(form)
+      });
+      setForm(initialForm);
+      setMessage("Đã đổi mật khẩu thành công.");
+    } catch (err) {
+      setError(err.message || "Không thể đổi mật khẩu");
+    } finally {
+      setSaving(false);
+    }
+  };
+  return /* @__PURE__ */ jsxDEV(
+    SettingsLayout,
+    {
+      activePath: "/user/password",
+      title: "Đổi mật khẩu",
+      description: "Giữ tài khoản an toàn bằng cách thay đổi mật khẩu định kỳ.",
+      aside: /* @__PURE__ */ jsxDEV("div", { className: "settings-aside-card", children: [
+        /* @__PURE__ */ jsxDEV("h3", { children: "Lưu ý bảo mật" }, void 0, false, {
+          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+          lineNumber: 74,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("ul", { children: [
+          /* @__PURE__ */ jsxDEV("li", { children: "Dùng mật khẩu ít nhất 6 ký tự" }, void 0, false, {
+            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+            lineNumber: 76,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("li", { children: "Không dùng lại mật khẩu cũ" }, void 0, false, {
+            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+            lineNumber: 77,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("li", { children: "Nên cập nhật định kỳ sau vài tháng" }, void 0, false, {
+            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+            lineNumber: 78,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+          lineNumber: 75,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+        lineNumber: 73,
+        columnNumber: 7
+      }, this),
+      children: /* @__PURE__ */ jsxDEV("form", { className: "settings-card settings-form", onSubmit: handleSubmit, children: [
+        message ? /* @__PURE__ */ jsxDEV("p", { className: "settings-success", children: message }, void 0, false, {
+          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+          lineNumber: 84,
+          columnNumber: 20
+        }, this) : null,
+        error ? /* @__PURE__ */ jsxDEV("p", { className: "settings-error", children: error }, void 0, false, {
+          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+          lineNumber: 85,
+          columnNumber: 18
+        }, this) : null,
+        /* @__PURE__ */ jsxDEV("div", { className: "settings-grid", children: [
+          /* @__PURE__ */ jsxDEV("label", { className: "settings-field settings-field-wide", children: [
+            /* @__PURE__ */ jsxDEV("span", { children: "Mật khẩu hiện tại" }, void 0, false, {
+              fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+              lineNumber: 89,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                name: "currentPassword",
+                type: "password",
+                value: form.currentPassword,
+                onChange: handleChange,
+                autoComplete: "current-password"
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+                lineNumber: 90,
+                columnNumber: 13
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+            lineNumber: 88,
+            columnNumber: 11
+          }, this),
+          /* @__PURE__ */ jsxDEV("label", { className: "settings-field", children: [
+            /* @__PURE__ */ jsxDEV("span", { children: "Mật khẩu mới" }, void 0, false, {
+              fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+              lineNumber: 99,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                name: "newPassword",
+                type: "password",
+                value: form.newPassword,
+                onChange: handleChange,
+                autoComplete: "new-password"
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+                lineNumber: 100,
+                columnNumber: 13
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+            lineNumber: 98,
+            columnNumber: 11
+          }, this),
+          /* @__PURE__ */ jsxDEV("label", { className: "settings-field", children: [
+            /* @__PURE__ */ jsxDEV("span", { children: "Xác nhận mật khẩu" }, void 0, false, {
+              fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+              lineNumber: 109,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                name: "confirmPassword",
+                type: "password",
+                value: form.confirmPassword,
+                onChange: handleChange,
+                autoComplete: "new-password"
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+                lineNumber: 110,
+                columnNumber: 13
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+            lineNumber: 108,
+            columnNumber: 11
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+          lineNumber: 87,
+          columnNumber: 9
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "settings-actions", children: /* @__PURE__ */ jsxDEV("button", { type: "submit", className: "settings-primary-btn", disabled: saving, children: saving ? "Đang cập nhật..." : "Đổi mật khẩu" }, void 0, false, {
+          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+          lineNumber: 121,
+          columnNumber: 11
+        }, this) }, void 0, false, {
+          fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+          lineNumber: 120,
+          columnNumber: 9
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+        lineNumber: 83,
+        columnNumber: 7
+      }, this)
+    },
+    void 0,
+    false,
+    {
+      fileName: "C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx",
+      lineNumber: 68,
+      columnNumber: 5
+    },
+    this
+  );
+};
+_s(PasswordSettings, "GlaF86c+xr+J9ji9Z+NoC2rUgKk=");
+_c = PasswordSettings;
+export default PasswordSettings;
+var _c;
+$RefreshReg$(_c, "PasswordSettings");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/Thinhpa/Abackend/frontend/src/pages/user/PasswordSettings.jsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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O0FBQUE7QUFBQSxhQTBDQTtBQUFBO0FBQUEsSUF6REY7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLEVBMERBO0FBRUo7QUFBRUgsR0FsR0lELGtCQUFnQjtBQUFBLEtBQWhCQTtBQW9HTixlQUFlQTtBQUFpQixJQUFBdUI7QUFBQSxhQUFBQSxJQUFBIiwibmFtZXMiOlsidXNlU3RhdGUiLCJhcGlSZXF1ZXN0IiwiU2V0dGluZ3NMYXlvdXQiLCJpbml0aWFsRm9ybSIsImN1cnJlbnRQYXNzd29yZCIsIm5ld1Bhc3N3b3JkIiwiY29uZmlybVBhc3N3b3JkIiwiUGFzc3dvcmRTZXR0aW5ncyIsIl9zIiwiZm9ybSIsInNldEZvcm0iLCJzYXZpbmciLCJzZXRTYXZpbmciLCJtZXNzYWdlIiwic2V0TWVzc2FnZSIsImVycm9yIiwic2V0RXJyb3IiLCJoYW5kbGVDaGFuZ2UiLCJldmVudCIsIm5hbWUiLCJ2YWx1ZSIsInRhcmdldCIsInByZXYiLCJoYW5kbGVTdWJtaXQiLCJwcmV2ZW50RGVmYXVsdCIsIm1ldGhvZCIsImJvZHkiLCJKU09OIiwic3RyaW5naWZ5IiwiZXJyIiwiX2MiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiUGFzc3dvcmRTZXR0aW5ncy5qc3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tIFwicmVhY3RcIjtcclxuaW1wb3J0IHsgYXBpUmVxdWVzdCB9IGZyb20gXCIuLi8uLi9saWIvYXBpLmpzXCI7XHJcbmltcG9ydCBTZXR0aW5nc0xheW91dCBmcm9tIFwiLi9TZXR0aW5nc0xheW91dC5qc3hcIjtcclxuXHJcbmNvbnN0IGluaXRpYWxGb3JtID0ge1xyXG4gIGN1cnJlbnRQYXNzd29yZDogXCJcIixcclxuICBuZXdQYXNzd29yZDogXCJcIixcclxuICBjb25maXJtUGFzc3dvcmQ6IFwiXCJcclxufTtcclxuXHJcbmNvbnN0IFBhc3N3b3JkU2V0dGluZ3MgPSAoKSA9PiB7XHJcbiAgY29uc3QgW2Zvcm0sIHNldEZvcm1dID0gdXNlU3RhdGUoaW5pdGlhbEZvcm0pO1xyXG4gIGNvbnN0IFtzYXZpbmcsIHNldFNhdmluZ10gPSB1c2VTdGF0ZShmYWxzZSk7XHJcbiAgY29uc3QgW21lc3NhZ2UsIHNldE1lc3NhZ2VdID0gdXNlU3RhdGUoXCJcIik7XHJcbiAgY29uc3QgW2Vycm9yLCBzZXRFcnJvcl0gPSB1c2VTdGF0ZShcIlwiKTtcclxuXHJcbiAgY29uc3QgaGFuZGxlQ2hhbmdlID0gKGV2ZW50KSA9PiB7XHJcbiAgICBjb25zdCB7IG5hbWUsIHZhbHVlIH0gPSBldmVudC50YXJnZXQ7XHJcbiAgICBzZXRGb3JtKChwcmV2KSA9PiAoeyAuLi5wcmV2LCBbbmFtZV06IHZhbHVlIH0pKTtcclxuICB9O1xyXG5cclxuICBjb25zdCBoYW5kbGVTdWJtaXQgPSBhc3luYyAoZXZlbnQpID0+IHtcclxuICAgIGV2ZW50LnByZXZlbnREZWZhdWx0KCk7XHJcbiAgICBzZXRTYXZpbmcodHJ1ZSk7XHJcbiAgICBzZXRNZXNzYWdlKFwiXCIpO1xyXG4gICAgc2V0RXJyb3IoXCJcIik7XHJcblxyXG4gICAgaWYgKGZvcm0ubmV3UGFzc3dvcmQgIT09IGZvcm0uY29uZmlybVBhc3N3b3JkKSB7XHJcbiAgICAgIHNldFNhdmluZyhmYWxzZSk7XHJcbiAgICAgIHNldEVycm9yKFwiTeG6rXQga2jhuql1IG3hu5tpIHbDoCB4w6FjIG5o4bqtbiBt4bqtdCBraOG6qXUgcGjhuqNpIHRyw7luZyBuaGF1LlwiKTtcclxuICAgICAgcmV0dXJuO1xyXG4gICAgfVxyXG5cclxuICAgIHRyeSB7XHJcbiAgICAgIGF3YWl0IGFwaVJlcXVlc3QoXCIvYXBpL3VzZXJzL21lL3Bhc3N3b3JkXCIsIHtcclxuICAgICAgICBtZXRob2Q6IFwiUFVUXCIsXHJcbiAgICAgICAgYm9keTogSlNPTi5zdHJpbmdpZnkoZm9ybSlcclxuICAgICAgfSk7XHJcbiAgICAgIHNldEZvcm0oaW5pdGlhbEZvcm0pO1xyXG4gICAgICBzZXRNZXNzYWdlKFwixJDDoyDEkeG7lWkgbeG6rXQga2jhuql1IHRow6BuaCBjw7RuZy5cIik7XHJcbiAgICB9IGNhdGNoIChlcnIpIHtcclxuICAgICAgc2V0RXJyb3IoZXJyLm1lc3NhZ2UgfHwgXCJLaMO0bmcgdGjhu4MgxJHhu5VpIG3huq10IGto4bqpdVwiKTtcclxuICAgIH0gZmluYWxseSB7XHJcbiAgICAgIHNldFNhdmluZyhmYWxzZSk7XHJcbiAgICB9XHJcbiAgfTtcclxuXHJcbiAgcmV0dXJuIChcclxuICAgIDxTZXR0aW5nc0xheW91dFxyXG4gICAgICBhY3RpdmVQYXRoPVwiL3VzZXIvcGFzc3dvcmRcIlxyXG4gICAgICB0aXRsZT1cIsSQ4buVaSBt4bqtdCBraOG6qXVcIlxyXG4gICAgICBkZXNjcmlwdGlvbj1cIkdp4buvIHTDoGkga2hv4bqjbiBhbiB0b8OgbiBi4bqxbmcgY8OhY2ggdGhheSDEkeG7lWkgbeG6rXQga2jhuql1IMSR4buLbmgga+G7sy5cIlxyXG4gICAgICBhc2lkZT17XHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzZXR0aW5ncy1hc2lkZS1jYXJkXCI+XHJcbiAgICAgICAgICA8aDM+TMawdSDDvSBi4bqjbyBt4bqtdDwvaDM+XHJcbiAgICAgICAgICA8dWw+XHJcbiAgICAgICAgICAgIDxsaT5Ew7luZyBt4bqtdCBraOG6qXUgw610IG5o4bqldCA2IGvDvSB04buxPC9saT5cclxuICAgICAgICAgICAgPGxpPktow7RuZyBkw7luZyBs4bqhaSBt4bqtdCBraOG6qXUgY8WpPC9saT5cclxuICAgICAgICAgICAgPGxpPk7Dqm4gY+G6rXAgbmjhuq10IMSR4buLbmgga+G7syBzYXUgdsOgaSB0aMOhbmc8L2xpPlxyXG4gICAgICAgICAgPC91bD5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgfVxyXG4gICAgPlxyXG4gICAgICA8Zm9ybSBjbGFzc05hbWU9XCJzZXR0aW5ncy1jYXJkIHNldHRpbmdzLWZvcm1cIiBvblN1Ym1pdD17aGFuZGxlU3VibWl0fT5cclxuICAgICAgICB7bWVzc2FnZSA/IDxwIGNsYXNzTmFtZT1cInNldHRpbmdzLXN1Y2Nlc3NcIj57bWVzc2FnZX08L3A+IDogbnVsbH1cclxuICAgICAgICB7ZXJyb3IgPyA8cCBjbGFzc05hbWU9XCJzZXR0aW5ncy1lcnJvclwiPntlcnJvcn08L3A+IDogbnVsbH1cclxuXHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzZXR0aW5ncy1ncmlkXCI+XHJcbiAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPVwic2V0dGluZ3MtZmllbGQgc2V0dGluZ3MtZmllbGQtd2lkZVwiPlxyXG4gICAgICAgICAgICA8c3Bhbj5N4bqtdCBraOG6qXUgaGnhu4duIHThuqFpPC9zcGFuPlxyXG4gICAgICAgICAgICA8aW5wdXRcclxuICAgICAgICAgICAgICBuYW1lPVwiY3VycmVudFBhc3N3b3JkXCJcclxuICAgICAgICAgICAgICB0eXBlPVwicGFzc3dvcmRcIlxyXG4gICAgICAgICAgICAgIHZhbHVlPXtmb3JtLmN1cnJlbnRQYXNzd29yZH1cclxuICAgICAgICAgICAgICBvbkNoYW5nZT17aGFuZGxlQ2hhbmdlfVxyXG4gICAgICAgICAgICAgIGF1dG9Db21wbGV0ZT1cImN1cnJlbnQtcGFzc3dvcmRcIlxyXG4gICAgICAgICAgICAvPlxyXG4gICAgICAgICAgPC9sYWJlbD5cclxuICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJzZXR0aW5ncy1maWVsZFwiPlxyXG4gICAgICAgICAgICA8c3Bhbj5N4bqtdCBraOG6qXUgbeG7m2k8L3NwYW4+XHJcbiAgICAgICAgICAgIDxpbnB1dFxyXG4gICAgICAgICAgICAgIG5hbWU9XCJuZXdQYXNzd29yZFwiXHJcbiAgICAgICAgICAgICAgdHlwZT1cInBhc3N3b3JkXCJcclxuICAgICAgICAgICAgICB2YWx1ZT17Zm9ybS5uZXdQYXNzd29yZH1cclxuICAgICAgICAgICAgICBvbkNoYW5nZT17aGFuZGxlQ2hhbmdlfVxyXG4gICAgICAgICAgICAgIGF1dG9Db21wbGV0ZT1cIm5ldy1wYXNzd29yZFwiXHJcbiAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICA8L2xhYmVsPlxyXG4gICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cInNldHRpbmdzLWZpZWxkXCI+XHJcbiAgICAgICAgICAgIDxzcGFuPljDoWMgbmjhuq1uIG3huq10IGto4bqpdTwvc3Bhbj5cclxuICAgICAgICAgICAgPGlucHV0XHJcbiAgICAgICAgICAgICAgbmFtZT1cImNvbmZpcm1QYXNzd29yZFwiXHJcbiAgICAgICAgICAgICAgdHlwZT1cInBhc3N3b3JkXCJcclxuICAgICAgICAgICAgICB2YWx1ZT17Zm9ybS5jb25maXJtUGFzc3dvcmR9XHJcbiAgICAgICAgICAgICAgb25DaGFuZ2U9e2hhbmRsZUNoYW5nZX1cclxuICAgICAgICAgICAgICBhdXRvQ29tcGxldGU9XCJuZXctcGFzc3dvcmRcIlxyXG4gICAgICAgICAgICAvPlxyXG4gICAgICAgICAgPC9sYWJlbD5cclxuICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzZXR0aW5ncy1hY3Rpb25zXCI+XHJcbiAgICAgICAgICA8YnV0dG9uIHR5cGU9XCJzdWJtaXRcIiBjbGFzc05hbWU9XCJzZXR0aW5ncy1wcmltYXJ5LWJ0blwiIGRpc2FibGVkPXtzYXZpbmd9PlxyXG4gICAgICAgICAgICB7c2F2aW5nID8gXCLEkGFuZyBj4bqtcCBuaOG6rXQuLi5cIiA6IFwixJDhu5VpIG3huq10IGto4bqpdVwifVxyXG4gICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvZm9ybT5cclxuICAgIDwvU2V0dGluZ3NMYXlvdXQ+XHJcbiAgKTtcclxufTtcclxuXHJcbmV4cG9ydCBkZWZhdWx0IFBhc3N3b3JkU2V0dGluZ3M7XHJcbiJdLCJmaWxlIjoiQzovVXNlcnMvVGhpbmhwYS9BYmFja2VuZC9mcm9udGVuZC9zcmMvcGFnZXMvdXNlci9QYXNzd29yZFNldHRpbmdzLmpzeCJ9

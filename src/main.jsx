@@ -6,6 +6,7 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Home from "./pages/Home.jsx";
 import JobDetail from "./pages/JobDetail.jsx";
+import JobsList from "./pages/JobsList.jsx";
 import CompanyDetail from "./pages/CompanyDetail.jsx";
 import CareerGuide from "./pages/CareerGuide.jsx";
 import RecruiterDashboard from "./pages/recruiter/RecruiterDashboard.jsx";
@@ -37,9 +38,10 @@ const root = createRoot(document.getElementById("root"));
 const recruiterRoles = ["RECRUITER", "ADMIN"];
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/jobs" element={<JobsList />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
         <Route path="/create-cv" element={<CreateCV />} />
         <Route path="/career-guide" element={<CareerGuide />} />
@@ -55,11 +57,33 @@ root.render(
         />
         <Route path="/user/saved" element={<SavedJobs />} />
         <Route path="/user/applied" element={<AppliedJobs />} />
-        <Route path="/user/matching" element={<MatchingJobs />} />
+        <Route
+          path="/user/matching"
+          element={
+            <RoleGate>
+              <MatchingJobs />
+            </RoleGate>
+          }
+        />
         <Route path="/user/profile" element={<ProfileSettings />} />
         <Route path="/user/password" element={<PasswordSettings />} />
         <Route path="/user/notifications" element={<NotificationSettings />} />
-        <Route path="/user/job-needs" element={<JobNeedsSettings />} />
+        <Route
+          path="/user/job-needs"
+          element={
+            <RoleGate>
+              <JobNeedsSettings />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/job-needs"
+          element={
+            <RoleGate>
+              <JobNeedsSettings />
+            </RoleGate>
+          }
+        />
         <Route path="/user/interviews" element={<MyInterviews />} />
         <Route
           path="/messages"
