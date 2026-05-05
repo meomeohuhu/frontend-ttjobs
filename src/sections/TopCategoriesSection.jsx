@@ -1,19 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
+import { fallbackJobMetadata, loadJobMetadata, mergeCategoryStats } from "../lib/jobMetadata.js";
 
 const PAGE_SIZE = 8;
-
-const fallbackCategories = [
-  { category: "SALES", label: "Kinh doanh - Bán hàng", jobCount: 0 },
-  { category: "MARKETING", label: "Marketing - PR - Quảng cáo", jobCount: 0 },
-  { category: "CUSTOMER-SERVICE", label: "Chăm sóc khách hàng", jobCount: 0 },
-  { category: "HR", label: "Nhân sự - Hành chính", jobCount: 0 },
-  { category: "INFORMATION-TECHNOLOGY", label: "Công nghệ thông tin", jobCount: 0 },
-  { category: "FINANCE", label: "Tài chính - Ngân hàng", jobCount: 0 },
-  { category: "REAL-ESTATE", label: "Bất động sản", jobCount: 0 },
-  { category: "ACCOUNTING", label: "Kế toán - Kiểm toán - Thuế", jobCount: 0 }
-];
+const fallbackCategories = mergeCategoryStats(fallbackJobMetadata.categories, []);
 
 const iconMap = {
   SALES: "tag",
@@ -37,23 +28,6 @@ const CategoryIcon = ({ type }) => {
   );
 };
 
-const mergeWithFallback = (items) => {
-  const byCategory = new Map();
-  items.forEach((item) => {
-    if (item?.category) {
-      byCategory.set(item.category, item);
-    }
-  });
-
-  const merged = fallbackCategories.map((item) => byCategory.get(item.category) || item);
-  items.forEach((item) => {
-    if (item?.category && !fallbackCategories.some((fallback) => fallback.category === item.category)) {
-      merged.push(item);
-    }
-  });
-  return merged;
-};
-
 const TopCategoriesSection = () => {
   const [categories, setCategories] = useState(fallbackCategories);
   const [page, setPage] = useState(0);
@@ -65,24 +39,16 @@ const TopCategoriesSection = () => {
     const loadCategories = async () => {
       setLoading(true);
       try {
-        const data = await apiRequest("/api/jobs/categories/top?size=16", { skipAuth: true });
+        const [metadata, data] = await Promise.all([
+          loadJobMetadata(),
+          apiRequest("/api/jobs/categories/top?size=16", { skipAuth: true })
+        ]);
         if (!active) return;
-        const normalized = Array.isArray(data)
-          ? data.map((item) => ({
-              category: item.category || "OTHER",
-              label: item.label || "Ngành nghề khác",
-              jobCount: Number(item.jobCount || 0)
-            }))
-          : [];
-        setCategories(mergeWithFallback(normalized));
+        setCategories(mergeCategoryStats(metadata.categories, data));
       } catch {
-        if (active) {
-          setCategories(fallbackCategories);
-        }
+        if (active) setCategories(fallbackCategories);
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     };
 
@@ -92,58 +58,61 @@ const TopCategoriesSection = () => {
     };
   }, []);
 
-  const pageCount = Math.max(1, Math.ceil(categories.length / PAGE_SIZE));
-  const visibleCategories = useMemo(() => {
-    const safePage = Math.min(page, pageCount - 1);
-    return categories.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
-  }, [categories, page, pageCount]);
+  const pages = useMemo(() => {
+    const chunks = [];
+    for (let index = 0; index < categories.length; index += PAGE_SIZE) {
+      chunks.push(categories.slice(index, index + PAGE_SIZE));
+    }
+    return chunks.length > 0 ? chunks : [fallbackCategories];
+  }, [categories]);
+
+  const currentPage = pages[page] || pages[0] || [];
+  const canSlide = pages.length > 1;
+
+  const goToPage = (direction) => {
+    if (!canSlide) return;
+    setPage((current) => (current + direction + pages.length) % pages.length);
+  };
 
   return (
-    <section className="top-categories-section">
+    <section className="section top-categories-section">
       <div className="top-categories-head">
         <div>
           <h2>Ngành nghề đang tuyển nhiều</h2>
           <p>Nhóm ngành có số lượng việc làm mở cao để bạn mở rộng lựa chọn nhanh hơn.</p>
         </div>
-        <div className="nav-circles">
-          <button
-            type="button"
-            aria-label="Trước"
-            disabled={page === 0}
-            onClick={() => setPage((current) => Math.max(current - 1, 0))}
-          >
+        <div className="section-arrows">
+          <button type="button" onClick={() => goToPage(-1)} disabled={!canSlide} aria-label="Nhóm ngành trước">
             <span />
           </button>
-          <button
-            type="button"
-            aria-label="Sau"
-            disabled={page >= pageCount - 1}
-            onClick={() => setPage((current) => Math.min(current + 1, pageCount - 1))}
-          >
+          <button type="button" onClick={() => goToPage(1)} disabled={!canSlide} aria-label="Nhóm ngành sau">
             <span />
           </button>
         </div>
       </div>
 
-      <div className="top-categories-grid">
-        {loading ? (
-          <div className="brand-empty-state top-category-state">Đang tải nhóm ngành nổi bật...</div>
-        ) : visibleCategories.length === 0 ? (
-          <div className="brand-empty-state top-category-state">Chưa có dữ liệu ngành nghề để hiển thị.</div>
-        ) : (
-          visibleCategories.map((item) => (
+      {loading ? <div className="brand-empty-state top-category-state">Đang tải nhóm ngành nổi bật...</div> : null}
+      {!loading && currentPage.length === 0 ? (
+        <div className="brand-empty-state top-category-state">Chưa có dữ liệu ngành nghề để hiển thị.</div>
+      ) : null}
+
+      {!loading && currentPage.length > 0 ? (
+        <div className="top-categories-grid">
+          {currentPage.map((item) => (
             <Link
               className="top-category-card top-category-link"
               key={item.category}
               to={`/jobs?category=${encodeURIComponent(item.category)}&label=${encodeURIComponent(item.label)}`}
             >
               <CategoryIcon type={item.category} />
-              <h3 title={item.label}>{item.label}</h3>
-              <p data-zero={item.jobCount === 0 ? "true" : "false"}>{formatCount(item.jobCount)} việc làm</p>
+              <h3>{item.label}</h3>
+              <p data-zero={Number(item.jobCount || 0) === 0 ? "true" : "false"}>
+                {formatCount(item.jobCount)} việc làm
+              </p>
             </Link>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 };

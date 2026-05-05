@@ -1,64 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
-
-const categories = [
-  "DESIGN",
-  "MARKETING",
-  "HR",
-  "INFORMATION-TECHNOLOGY",
-  "SALES",
-  "CUSTOMER-SERVICE"
-];
-
-const categoryLabels = {
-  DESIGN: "Design",
-  MARKETING: "Marketing",
-  HR: "HR",
-  "INFORMATION-TECHNOLOGY": "IT",
-  SALES: "Sales",
-  "CUSTOMER-SERVICE": "CSKH"
-};
-
-const fallbackLocationGroups = [
-  {
-    code: 1,
-    province: "Hà Nội",
-    districts: ["Ba Đình", "Cầu Giấy", "Đống Đa", "Hai Bà Trưng", "Nam Từ Liêm", "Thanh Xuân"]
-  },
-  {
-    code: 79,
-    province: "TP. Hồ Chí Minh",
-    districts: ["Quận 1", "Quận 3", "Quận 7", "Bình Thạnh", "Phú Nhuận", "Tân Bình"]
-  },
-  {
-    code: 74,
-    province: "Bình Dương",
-    districts: ["Thủ Dầu Một", "Dĩ An", "Thuận An", "Bến Cát", "Tân Uyên"]
-  },
-  {
-    code: 48,
-    province: "Đà Nẵng",
-    districts: ["Hải Châu", "Thanh Khê", "Sơn Trà", "Ngũ Hành Sơn", "Liên Chiểu"]
-  }
-];
-
-const formatCategory = (value) =>
-  categoryLabels[value] ||
-  value
-    .toLowerCase()
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+import { fallbackJobMetadata, getOptionLabel, loadJobMetadata, loadProvinceGroups } from "../lib/jobMetadata.js";
 
 const formatCount = (value) => {
   const numberValue = Number(value);
-  if (!Number.isFinite(numberValue) || numberValue < 0) {
-    return "";
-  }
+  if (!Number.isFinite(numberValue) || numberValue < 0) return "";
   return numberValue.toLocaleString("vi-VN");
 };
 
+const buildJobsUrl = ({ keyword, category, location }) => {
+  const query = new URLSearchParams();
+  if (keyword?.trim()) query.set("keyword", keyword.trim());
+  if (category?.trim()) query.set("category", category.trim());
+  if (location?.trim()) query.set("location", location.trim());
+  return query.toString() ? `/jobs?${query.toString()}` : "/jobs";
+};
+
 const HeroSearch = () => {
+  const navigate = useNavigate();
+  const [metadata, setMetadata] = useState(fallbackJobMetadata);
   const [keyword, setKeyword] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
   const [showCategories, setShowCategories] = useState(false);
@@ -67,10 +28,7 @@ const HeroSearch = () => {
   const [selectedProvinceCode, setSelectedProvinceCode] = useState(null);
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
-  const [locationGroups, setLocationGroups] = useState(fallbackLocationGroups);
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [locationGroups, setLocationGroups] = useState(fallbackJobMetadata.locationsFallback);
   const [openJobsCount, setOpenJobsCount] = useState("60.000+");
   const [employerCount, setEmployerCount] = useState("1.800+");
   const [hotPositions, setHotPositions] = useState([
@@ -80,39 +38,15 @@ const HeroSearch = () => {
   ]);
   const [activeHotIndex, setActiveHotIndex] = useState(0);
   const searchFormRef = useRef(null);
-  const searchResultsRef = useRef(null);
 
   useEffect(() => {
     let active = true;
 
-    const loadLocations = async () => {
-      try {
-        const response = await fetch("https://provinces.open-api.vn/api/v1/?depth=2");
-        if (!response.ok) {
-          throw new Error("Không tải được danh sách địa điểm");
-        }
-
-        const data = await response.json();
-        const mapped = Array.isArray(data)
-          ? data
-              .map((item) => ({
-                code: item?.code ?? null,
-                province: item?.name || "",
-                districts: Array.isArray(item?.districts)
-                  ? item.districts.map((district) => district?.name || "").filter(Boolean)
-                  : []
-              }))
-              .filter((item) => item.province)
-          : [];
-
-        if (active && mapped.length > 0) {
-          setLocationGroups(mapped);
-        }
-      } catch {
-        if (active) {
-          setLocationGroups(fallbackLocationGroups);
-        }
-      }
+    const loadMetadataAndLocations = async () => {
+      const nextMetadata = await loadJobMetadata();
+      if (!active) return;
+      setMetadata(nextMetadata);
+      setLocationGroups(await loadProvinceGroups(nextMetadata.locationsFallback));
     };
 
     const loadHeroStats = async () => {
@@ -134,20 +68,18 @@ const HeroSearch = () => {
             .slice(0, 3)
             .map((job) => ({ title: job.title, count: Number(job.savedCount || 0) }));
 
-          if (rankedPositions.length > 0) {
-            setHotPositions(rankedPositions);
-          }
+          if (rankedPositions.length > 0) setHotPositions(rankedPositions);
         }
 
         if (companiesResult.status === "fulfilled" && Array.isArray(companiesResult.value)) {
           setEmployerCount(formatCount(companiesResult.value.length) || "1.800+");
         }
       } catch {
-        // Keep fallback stats.
+        // Keep fallback stats for demo resilience.
       }
     };
 
-    loadLocations();
+    loadMetadataAndLocations();
     loadHeroStats();
 
     return () => {
@@ -182,26 +114,18 @@ const HeroSearch = () => {
     return locationGroups.filter((group) => group.province.toLowerCase().includes(query));
   }, [locationGroups, provinceQuery]);
 
-  const selectedLocationLabel = selectedDistrict
-    ? `${selectedDistrict}, ${selectedProvince}`
-    : selectedProvince || "Địa điểm";
-
   const selectedProvinceEntry = useMemo(() => {
     if (!selectedProvinceCode) return null;
     return locationGroups.find((group) => group.code === selectedProvinceCode) || null;
   }, [locationGroups, selectedProvinceCode]);
 
+  const selectedLocationLabel = selectedDistrict
+    ? `${selectedDistrict}, ${selectedProvince}`
+    : selectedProvince || "Địa điểm";
+
   const hotSlides = hotPositions.length > 0 ? hotPositions : [{ title: "Java Backend Developer", count: 18 }];
   const activeHotSlide = hotSlides[activeHotIndex] || hotSlides[0];
   const activeHotCount = activeHotSlide?.count || hotSlides[0]?.count || 0;
-  const resultSummary = useMemo(() => {
-    if (results.length === 0) return "";
-    const parts = [];
-    if (keyword.trim()) parts.push(`từ khóa "${keyword.trim()}"`);
-    if (activeCategory) parts.push(`ngành ${formatCategory(activeCategory)}`);
-    if (selectedDistrict || selectedProvince) parts.push(`khu vực ${selectedDistrict || selectedProvince}`);
-    return parts.length > 0 ? `Gợi ý theo ${parts.join(", ")}.` : "Gợi ý nhanh từ dữ liệu tuyển dụng mới nhất.";
-  }, [results.length, keyword, activeCategory, selectedDistrict, selectedProvince]);
 
   const goToHotSlide = (nextIndex) => {
     const total = hotSlides.length;
@@ -209,44 +133,24 @@ const HeroSearch = () => {
     setActiveHotIndex(((nextIndex % total) + total) % total);
   };
 
-  const runSearch = async (payload = {}, options = {}) => {
-    const { scrollToResults = false } = options;
-    const finalKeyword = payload.keyword ?? keyword;
-    const finalCategory = payload.category ?? activeCategory;
-    const finalLocation = payload.location ?? (selectedDistrict || selectedProvince);
-
-    const query = new URLSearchParams();
-    if (finalKeyword) query.set("keyword", finalKeyword);
-    if (finalLocation) query.set("location", finalLocation);
-    if (!finalKeyword && finalCategory) query.set("keyword", finalCategory);
-
-    setLoading(true);
-    setError("");
-    try {
-      const data = await apiRequest(`/api/jobs/search?${query.toString()}`, { skipAuth: true });
-      setResults(Array.isArray(data) ? data.slice(0, 5) : []);
-    } catch (err) {
-      setError(err.message || "Không thể tìm kiếm lúc này.");
-    } finally {
-      setLoading(false);
-      if (scrollToResults) {
-        window.requestAnimationFrame(() => {
-          searchResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-      }
-    }
+  const goToJobs = (overrides = {}) => {
+    const finalKeyword = overrides.keyword ?? keyword;
+    const finalCategory = overrides.category ?? activeCategory;
+    const finalLocation = overrides.location ?? (selectedDistrict || selectedProvince);
+    navigate(buildJobsUrl({ keyword: finalKeyword, category: finalCategory, location: finalLocation }));
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
     setShowCategories(false);
     setShowLocationPicker(false);
-    runSearch({}, { scrollToResults: true });
+    goToJobs();
   };
 
   const handleCategoryClick = (value) => {
     setActiveCategory(value);
-    runSearch({ keyword: "", category: value }, { scrollToResults: true });
+    setShowCategories(false);
+    goToJobs({ keyword: "", category: value });
   };
 
   const handleProvinceSelect = (group) => {
@@ -257,9 +161,6 @@ const HeroSearch = () => {
 
   const applyLocation = () => {
     setShowLocationPicker(false);
-    if (selectedDistrict || selectedProvince) {
-      runSearch({ location: selectedDistrict || selectedProvince }, { scrollToResults: true });
-    }
   };
 
   const clearLocation = () => {
@@ -284,22 +185,19 @@ const HeroSearch = () => {
               <div className="search-pill-wrap">
                 <button type="button" className="search-pill" onClick={() => setShowCategories((prev) => !prev)}>
                   <span className="search-icon menu" />
-                  {activeCategory ? formatCategory(activeCategory) : "Danh mục nghề"}
+                  {activeCategory ? getOptionLabel(metadata.categories, activeCategory) : "Danh mục nghề"}
                   <span className="caret" />
                 </button>
                 {showCategories ? (
                   <div className="search-category-menu">
-                    {categories.map((item) => (
+                    {metadata.categories.map((item) => (
                       <button
-                        key={item}
+                        key={item.value}
                         type="button"
-                        className={item === activeCategory ? "active" : ""}
-                        onClick={() => {
-                          handleCategoryClick(item);
-                          setShowCategories(false);
-                        }}
+                        className={item.value === activeCategory ? "active" : ""}
+                        onClick={() => handleCategoryClick(item.value)}
                       >
-                        {formatCategory(item)}
+                        {item.label}
                       </button>
                     ))}
                   </div>
@@ -389,16 +287,16 @@ const HeroSearch = () => {
                 ) : null}
               </div>
 
-              <button type="submit" className="search-btn" disabled={loading}>
+              <button type="submit" className="search-btn">
                 <span className="search-icon magnify" />
-                {loading ? "Đang tìm..." : "Tìm việc"}
+                Tìm việc
               </button>
             </form>
 
             <div className="hero-chips">
-              {categories.slice(0, 4).map((item) => (
-                <button key={item} type="button" className="hero-chip" onClick={() => handleCategoryClick(item)}>
-                  {formatCategory(item)}
+              {metadata.categories.slice(0, 4).map((item) => (
+                <button key={item.value} type="button" className="hero-chip" onClick={() => handleCategoryClick(item.value)}>
+                  {item.label}
                 </button>
               ))}
             </div>
@@ -426,7 +324,7 @@ const HeroSearch = () => {
                     onClick={() => {
                       setKeyword(activeHotSlide.title);
                       setActiveCategory("");
-                      runSearch({ keyword: activeHotSlide.title }, { scrollToResults: true });
+                      goToJobs({ keyword: activeHotSlide.title, category: "" });
                     }}
                     aria-label={`Tìm việc cho nhóm vị trí ${activeHotSlide.title}`}
                   >
@@ -455,29 +353,6 @@ const HeroSearch = () => {
             </div>
           </div>
         </div>
-
-        {error ? <p className="search-error">{error}</p> : null}
-
-        {results.length > 0 ? (
-          <div className="search-results" ref={searchResultsRef}>
-            <div className="results-head">
-              <div>
-                <strong>Gợi ý phù hợp để bạn mở tiếp</strong>
-                <p>{resultSummary}</p>
-              </div>
-              <span>{results.length} việc làm</span>
-            </div>
-            {results.map((job) => (
-              <Link key={job.id} to={`/jobs/${job.id}`} className="result-item">
-                <div>
-                  <h4>{job.title}</h4>
-                  <p>{job.companyName || "Đang cập nhật"}</p>
-                </div>
-                <span>{job.location || "Toàn quốc"}</span>
-              </Link>
-            ))}
-          </div>
-        ) : null}
 
         <div className="hero-footer-note">Gợi ý theo kỹ năng, vị trí và khu vực để bạn lọc nhanh hơn mà không phải mở quá nhiều trang.</div>
       </div>

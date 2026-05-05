@@ -5,19 +5,23 @@ import FloatingActions from "../../sections/FloatingActions.jsx";
 
 const settingsNav = [
   { label: "Thông tin cá nhân", to: "/user/profile" },
+  { label: "CV của tôi", to: "/user/cv" },
+  { label: "Cover Letter của tôi", to: "/user/cover-letters" },
+  { label: "Nhà tuyển dụng kết nối", to: "/user/recruiter-connections" },
+  { label: "Nhà tuyển dụng xem hồ sơ", to: "/user/profile-views" },
   { label: "Nhu cầu công việc", to: "/user/job-needs" },
   { label: "Đổi mật khẩu", to: "/user/password" },
   { label: "Thông báo", to: "/user/notifications" }
 ];
 
-const SettingsLayout = ({ title, description, activePath, children, aside }) => {
+const SettingsLayout = ({ title, description, activePath, children, aside, wide = false }) => {
   return (
     <div className="user-page-shell">
       <HomeHeader />
       <AnnouncementBar />
 
       <div className="user-page-container">
-        <div className="settings-layout">
+        <div className={`settings-layout ${wide ? "settings-layout-wide" : ""}`}>
           <aside className="settings-sidebar">
             <div className="settings-sidebar-card">
               <p className="settings-sidebar-kicker">Cài đặt tài khoản</p>

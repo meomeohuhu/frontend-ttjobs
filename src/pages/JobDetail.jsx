@@ -40,6 +40,14 @@ const formatDate = (value) => {
   return date.toLocaleDateString("vi-VN");
 };
 
+const formatMatchScore = (job) => {
+  const value = Number(job?.matchScore);
+  if (!Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+  return `${Math.round(value)}% phù hợp`;
+};
+
 const JobDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -50,7 +58,9 @@ const JobDetail = () => {
   const [applying, setApplying] = useState(false);
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [cvFile, setCvFile] = useState(null);
-  const [useProfileCv, setUseProfileCv] = useState(false);
+  const [savedCvs, setSavedCvs] = useState([]);
+  const [myProfile, setMyProfile] = useState(null);
+  const [selectedCvId, setSelectedCvId] = useState("");
   const [saveToCvList, setSaveToCvList] = useState(true);
   const [error, setError] = useState("");
   const [applyMessage, setApplyMessage] = useState("");
@@ -139,18 +149,34 @@ const JobDetail = () => {
       return;
     }
     setShowApplyForm(true);
+    Promise.all([
+      apiRequest("/api/users/me").catch(() => null),
+      apiRequest("/api/users/me/cvs").catch(() => [])
+    ])
+      .then(([profile, data]) => {
+        const list = Array.isArray(data) ? data : [];
+        const hasSystemCv = Boolean(profile?.cvRole || profile?.cvObjective || profile?.cvExperienceHighlights);
+        setMyProfile(profile);
+        setSavedCvs(list);
+        setSelectedCvId((current) => current || (hasSystemCv ? "system" : String(list[0]?.id || "")));
+      })
+      .catch(() => {
+        setMyProfile(null);
+        setSavedCvs([]);
+        setSelectedCvId("");
+      });
   };
 
   const submitApplication = async (event) => {
     event.preventDefault();
     if (!job?.id || applying || alreadyApplied) return;
 
-    if (!cvFile && !useProfileCv) {
-      setError("Bạn cần tải CV hoặc chọn dùng CV đã lưu.");
+    if (!cvFile && !selectedCvId) {
+      setError("Bạn cần tải CV mới hoặc chọn một CV đã lưu.");
       return;
     }
-    if (cvFile && useProfileCv) {
-      setError("Chỉ chọn một cách nộp CV: tải file mới hoặc dùng CV đã lưu.");
+    if (cvFile && selectedCvId) {
+      setError("Chỉ chọn một cách nộp CV: tải file mới hoặc chọn CV đã lưu.");
       return;
     }
 
@@ -160,8 +186,12 @@ const JobDetail = () => {
     try {
       const formData = new FormData();
       formData.append("jobId", job.id);
-      formData.append("useProfileCv", String(useProfileCv));
       formData.append("saveToCvList", String(saveToCvList));
+      if (selectedCvId === "system") {
+        formData.append("useSystemCv", "true");
+      } else if (selectedCvId) {
+        formData.append("cvId", selectedCvId);
+      }
       if (cvFile) {
         formData.append("file", cvFile);
       }
@@ -173,7 +203,7 @@ const JobDetail = () => {
       setApplyMessage("Ứng tuyển thành công. Hồ sơ của bạn đã được gửi đến nhà tuyển dụng.");
       setShowApplyForm(false);
       setCvFile(null);
-      setUseProfileCv(false);
+      setSelectedCvId("");
       await loadMyApplications();
     } catch (err) {
       const message = err.message || "Không thể ứng tuyển công việc";
@@ -253,8 +283,31 @@ const JobDetail = () => {
                   <form className="job-apply-panel" onSubmit={submitApplication}>
                     <div>
                       <strong>Nộp CV ứng tuyển</strong>
-                      <span>Hỗ trợ PDF, DOC, DOCX. Dung lượng tối đa 5MB.</span>
+                      <span>Chọn CV đã lưu hoặc tải file mới PDF, DOC, DOCX tối đa 5MB.</span>
                     </div>
+                    <label className="job-apply-select">
+                      <span>Chọn CV đã lưu</span>
+                      <select
+                        value={selectedCvId}
+                        disabled={Boolean(cvFile)}
+                        onChange={(event) => setSelectedCvId(event.target.value)}
+                      >
+                        <option value="">Không chọn CV đã lưu</option>
+                        {myProfile?.cvRole || myProfile?.cvObjective || myProfile?.cvExperienceHighlights ? (
+                          <option value="system">
+                            CV tạo trên TTJobs{myProfile?.cvRole ? ` - ${myProfile.cvRole}` : ""}
+                          </option>
+                        ) : null}
+                        {savedCvs.map((cv) => (
+                          <option key={cv.id} value={cv.id}>
+                            {cv.fileName || "CV đã tải lên"}{cv.current ? " - CV chính" : ""}
+                          </option>
+                        ))}
+                      </select>
+                      {savedCvs.length === 0 ? (
+                        <small>Bạn có thể chọn CV tạo trên TTJobs, CV đã tải lên hoặc tải file mới bên dưới.</small>
+                      ) : null}
+                    </label>
                     <label className="job-apply-upload">
                       <span>{cvFile ? cvFile.name : "Chọn file CV"}</span>
                       <input
@@ -263,29 +316,16 @@ const JobDetail = () => {
                         onChange={(event) => {
                           setCvFile(event.target.files?.[0] || null);
                           if (event.target.files?.[0]) {
-                            setUseProfileCv(false);
+                            setSelectedCvId("");
                           }
                         }}
                       />
-                    </label>
-                    <label className="job-apply-check">
-                      <input
-                        type="checkbox"
-                        checked={useProfileCv}
-                        onChange={(event) => {
-                          setUseProfileCv(event.target.checked);
-                          if (event.target.checked) {
-                            setCvFile(null);
-                          }
-                        }}
-                      />
-                      Dùng CV đã lưu trong hồ sơ
                     </label>
                     <label className="job-apply-check">
                       <input
                         type="checkbox"
                         checked={saveToCvList}
-                        disabled={useProfileCv}
+                        disabled={Boolean(selectedCvId)}
                         onChange={(event) => setSaveToCvList(event.target.checked)}
                       />
                       Lưu file CV này vào hồ sơ của tôi
@@ -304,8 +344,8 @@ const JobDetail = () => {
 
               <aside className="company-card">
                 <div className="company-logo">
-                  {job.companyLogoUrl ? (
-                    <img src={job.companyLogoUrl} alt={job.companyName || "Logo"} />
+                  {job.imageUrl || job.companyLogoUrl ? (
+                    <img src={job.imageUrl || job.companyLogoUrl} alt={job.title || job.companyName || "Logo"} />
                   ) : (
                     <span>{(job.companyName || "C")[0]}</span>
                   )}
@@ -356,6 +396,31 @@ const JobDetail = () => {
               </div>
 
               <aside className="job-side-panel">
+                <div className="side-card job-match-panel">
+                  <h3>Vì sao việc này phù hợp với bạn</h3>
+                  {job.matchScore ? (
+                    <>
+                      <strong>{formatMatchScore(job)}</strong>
+                      <div className="match-reasons">
+                        {(job.matchReasons || []).slice(0, 4).map((reason) => (
+                          <span key={reason}>{reason}</span>
+                        ))}
+                      </div>
+                      {Number(job.matchScore) < 60 ? (
+                        <Link to="/user/job-needs" className="company-link">
+                          Cập nhật nhu cầu để gợi ý chính xác hơn
+                        </Link>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <p>Đăng nhập và cập nhật nhu cầu công việc để xem điểm phù hợp cho tin này.</p>
+                      <Link to="/user/job-needs" className="company-link">
+                        Cập nhật nhu cầu
+                      </Link>
+                    </>
+                  )}
+                </div>
                 <div className="side-card">
                   <h3>Danh mục nghề liên quan</h3>
                   <div className="pill-group">
@@ -392,10 +457,10 @@ const JobDetail = () => {
                 {relatedJobs.map((item) => (
                   <Link key={item.id} to={`/jobs/${item.id}`} className="related-card">
                     <div className="related-logo">
-                      {item.companyLogoUrl ? (
+                      {item.imageUrl || item.companyLogoUrl ? (
                         <img
-                          src={item.companyLogoUrl}
-                          alt={item.companyName || "Logo"}
+                          src={item.imageUrl || item.companyLogoUrl}
+                          alt={item.title || item.companyName || "Logo"}
                         />
                       ) : (
                         <span>{(item.companyName || "C")[0]}</span>

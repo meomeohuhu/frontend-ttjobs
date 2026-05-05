@@ -9,6 +9,17 @@ import JobDetail from "./pages/JobDetail.jsx";
 import JobsList from "./pages/JobsList.jsx";
 import CompanyDetail from "./pages/CompanyDetail.jsx";
 import CareerGuide from "./pages/CareerGuide.jsx";
+import Tools from "./pages/Tools.jsx";
+import GrossNet from "./pages/tools/GrossNet.jsx";
+import PersonalIncomeTax from "./pages/tools/PersonalIncomeTax.jsx";
+import UnemploymentInsurance from "./pages/tools/UnemploymentInsurance.jsx";
+import SocialInsuranceOnce from "./pages/tools/SocialInsuranceOnce.jsx";
+import CompoundInterest from "./pages/tools/CompoundInterest.jsx";
+import SavingPlan from "./pages/tools/SavingPlan.jsx";
+import MBTI from "./pages/tools/MBTI.jsx";
+import MultipleIntelligence from "./pages/tools/MultipleIntelligence.jsx";
+import InterviewQuestions from "./pages/tools/InterviewQuestions.jsx";
+import SalaryLookup from "./pages/tools/SalaryLookup.jsx";
 import RecruiterDashboard from "./pages/recruiter/RecruiterDashboard.jsx";
 import RecruiterHistory from "./pages/recruiter/RecruiterHistory.jsx";
 import RecruiterChat from "./pages/recruiter/RecruiterChat.jsx";
@@ -32,6 +43,10 @@ import SavedJobs from "./pages/user/SavedJobs.jsx";
 import AppliedJobs from "./pages/user/AppliedJobs.jsx";
 import MatchingJobs from "./pages/user/MatchingJobs.jsx";
 import MyInterviews from "./pages/user/MyInterviews.jsx";
+import MyCv from "./pages/user/MyCv.jsx";
+import CoverLetters from "./pages/user/CoverLetters.jsx";
+import RecruiterConnections from "./pages/user/RecruiterConnections.jsx";
+import ProfileViews from "./pages/user/ProfileViews.jsx";
 import CreateCV from "./pages/CreateCV.jsx";
 
 const root = createRoot(document.getElementById("root"));
@@ -44,6 +59,17 @@ root.render(
         <Route path="/jobs" element={<JobsList />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
         <Route path="/create-cv" element={<CreateCV />} />
+        <Route path="/tools" element={<Tools />} />
+        <Route path="/tools/gross-net" element={<GrossNet />} />
+        <Route path="/tools/personal-income-tax" element={<PersonalIncomeTax />} />
+        <Route path="/tools/unemployment-insurance" element={<UnemploymentInsurance />} />
+        <Route path="/tools/social-insurance-once" element={<SocialInsuranceOnce />} />
+        <Route path="/tools/compound-interest" element={<CompoundInterest />} />
+        <Route path="/tools/saving-plan" element={<SavingPlan />} />
+        <Route path="/tools/mbti" element={<MBTI />} />
+        <Route path="/tools/mi" element={<MultipleIntelligence />} />
+        <Route path="/tools/interview-questions" element={<InterviewQuestions />} />
+        <Route path="/tools/salary-lookup" element={<SalaryLookup />} />
         <Route path="/career-guide" element={<CareerGuide />} />
         <Route path="/career-guide/:slug" element={<CareerGuide />} />
         <Route path="/companies/:id" element={<CompanyDetail />} />
@@ -66,6 +92,10 @@ root.render(
           }
         />
         <Route path="/user/profile" element={<ProfileSettings />} />
+        <Route path="/user/cv" element={<MyCv />} />
+        <Route path="/user/cover-letters" element={<CoverLetters />} />
+        <Route path="/user/recruiter-connections" element={<RecruiterConnections />} />
+        <Route path="/user/profile-views" element={<ProfileViews />} />
         <Route path="/user/password" element={<PasswordSettings />} />
         <Route path="/user/notifications" element={<NotificationSettings />} />
         <Route

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
+import { fallbackJobMetadata, getOptionLabel, loadJobMetadata } from "../lib/jobMetadata.js";
 import HomeHeader from "../sections/HomeHeader.jsx";
 import AnnouncementBar from "../sections/AnnouncementBar.jsx";
 import FloatingActions from "../sections/FloatingActions.jsx";
@@ -11,13 +12,13 @@ const demoJobs = [
     id: "demo-backend",
     title: "Java Backend Developer",
     companyName: "TTJobs Demo Company",
-    category: "INFORMATION_TECHNOLOGY",
+    category: "INFORMATION-TECHNOLOGY",
     jobType: "Full-time",
-    location: "Ha Noi",
+    location: "Hà Nội",
     salaryMin: 20000000,
     salaryMax: 35000000,
     currency: "VND",
-    description: "Phat trien API, toi uu he thong va phoi hop voi product team trong moi truong co du lieu that."
+    description: "Phát triển API, tối ưu hệ thống và phối hợp với product team trong môi trường có dữ liệu thật."
   },
   {
     id: "demo-business",
@@ -25,11 +26,11 @@ const demoJobs = [
     companyName: "Growth Lab",
     category: "SALES",
     jobType: "Hybrid",
-    location: "Thanh pho Ho Chi Minh",
+    location: "TP. Hồ Chí Minh",
     salaryMin: 15000000,
     salaryMax: 28000000,
     currency: "VND",
-    description: "Mo rong tap khach hang doanh nghiep, theo doi pipeline va de xuat chien dich tuyen dung phu hop."
+    description: "Mở rộng tệp khách hàng doanh nghiệp, theo dõi pipeline và đề xuất chiến dịch tuyển dụng phù hợp."
   },
   {
     id: "demo-hr",
@@ -37,11 +38,11 @@ const demoJobs = [
     companyName: "People Studio",
     category: "HR",
     jobType: "Full-time",
-    location: "Da Nang",
+    location: "Đà Nẵng",
     salaryMin: 12000000,
     salaryMax: 22000000,
     currency: "VND",
-    description: "Quan ly nguon ung vien, sang loc CV va dong hanh cung hiring manager trong tung vong phong van."
+    description: "Quản lý nguồn ứng viên, sàng lọc CV và đồng hành cùng hiring manager trong từng vòng phỏng vấn."
   }
 ];
 
@@ -78,20 +79,21 @@ const formatDescription = (job) => {
   return raw.length > 120 ? `${raw.slice(0, 117)}...` : raw;
 };
 
-const formatJobType = (job) => String(job?.jobType || job?.workType || job?.employmentType || "Full-time");
-
 const markLogoFailed = (event) => {
   event.currentTarget.closest("[data-fallback]")?.setAttribute("data-logo-failed", "true");
 };
 
 const JobsList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [metadata, setMetadata] = useState(fallbackJobMetadata);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
+  const [actionError, setActionError] = useState("");
 
   const category = searchParams.get("category") || "";
-  const categoryLabel = searchParams.get("label") || "Tất cả việc làm";
+  const categoryLabel = category ? getOptionLabel(metadata.categories, category, searchParams.get("label") || category) : "Tất cả việc làm";
   const query = searchParams.get("keyword") || searchParams.get("q") || "";
   const location = searchParams.get("location") || "";
   const jobType = searchParams.get("jobType") || "";
@@ -110,15 +112,31 @@ const JobsList = () => {
     if (name === "keyword") {
       next.delete("q");
     }
+    if (name === "category") {
+      next.delete("label");
+    }
     setSearchParams(next, { replace: true });
   };
 
   const clearFilters = () => {
-    const next = new URLSearchParams();
-    if (category) next.set("category", category);
-    if (searchParams.get("label")) next.set("label", searchParams.get("label"));
-    setSearchParams(next, { replace: true });
+    setSearchParams(new URLSearchParams(), { replace: true });
   };
+
+  const removeFilter = (name) => {
+    updateFilter(name, "");
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    loadJobMetadata().then((data) => {
+      if (active) setMetadata(data);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -136,15 +154,16 @@ const JobsList = () => {
         if (salaryMin) queryParams.set("salaryMin", salaryMin);
         if (salaryMax) queryParams.set("salaryMax", salaryMax);
         if (sort) queryParams.set("sort", sort);
+        queryParams.set("includeMatch", "true");
         queryParams.set("size", "60");
         const suffix = queryParams.toString();
-        const data = await apiRequest(`/api/jobs${suffix ? `?${suffix}` : ""}`, { skipAuth: true });
+        const data = await apiRequest(`/api/jobs${suffix ? `?${suffix}` : ""}`);
         if (!active) return;
         setJobs(Array.isArray(data) ? data : []);
-      } catch (err) {
+      } catch {
         if (active) {
           setJobs([]);
-          setError("Chưa kết nối được máy chủ, TTJobs đang hiển thị bố cục demo để bạn vẫn xem được trải nghiệm trang.");
+          setError("Chưa kết nối được máy chủ, TTJobs đang hiển thị dữ liệu demo để bạn vẫn xem được trải nghiệm trang.");
         }
       } finally {
         if (active) {
@@ -179,6 +198,70 @@ const JobsList = () => {
   }, [category, experienceLevel, jobType, location, query, sourceJobs]);
 
   const hasActiveFilter = Boolean(category || query || location || jobType || experienceLevel || salaryMin || salaryMax || sort !== "latest");
+  const activeChips = [
+    query ? { key: "keyword", label: `Từ khóa: ${query}` } : null,
+    category ? { key: "category", label: `Ngành: ${categoryLabel}` } : null,
+    location ? { key: "location", label: `Khu vực: ${location}` } : null,
+    jobType ? { key: "jobType", label: `Loại việc: ${getOptionLabel(metadata.jobTypes, jobType)}` } : null,
+    experienceLevel ? { key: "experienceLevel", label: `Kinh nghiệm: ${getOptionLabel(metadata.experienceLevels, experienceLevel)}` } : null,
+    salaryMin ? { key: "salaryMin", label: `Từ ${formatNumber(salaryMin)} VND` } : null,
+    salaryMax ? { key: "salaryMax", label: `Đến ${formatNumber(salaryMax)} VND` } : null,
+    sort !== "latest" ? { key: "sort", label: sort === "match" ? "Phù hợp nhất" : "Sắp xếp lương" } : null
+  ].filter(Boolean);
+
+  const applyMyNeeds = async () => {
+    setActionMessage("");
+    setActionError("");
+    try {
+      const needs = await apiRequest("/api/job-needs/preferences");
+      const next = new URLSearchParams(searchParams);
+      const mapping = {
+        keyword: needs.desiredTitle,
+        category: needs.desiredCategory,
+        location: needs.desiredLocation,
+        jobType: needs.desiredJobType,
+        experienceLevel: needs.desiredExperienceLevel,
+        salaryMin: needs.minSalary,
+        salaryMax: needs.maxSalary
+      };
+      Object.entries(mapping).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && String(value).trim()) {
+          next.set(key, String(value));
+        }
+      });
+      next.set("sort", "match");
+      setSearchParams(next, { replace: true });
+      setActionMessage("Đã áp dụng nhu cầu công việc vào bộ lọc.");
+    } catch (err) {
+      setActionError((err.message || "").toLowerCase().includes("unauthorized")
+        ? "Bạn cần đăng nhập để áp dụng nhu cầu công việc."
+        : "Không thể tải nhu cầu công việc của bạn.");
+    }
+  };
+
+  const saveFiltersToNeeds = async () => {
+    setActionMessage("");
+    setActionError("");
+    try {
+      await apiRequest("/api/job-needs/preferences", {
+        method: "PUT",
+        body: JSON.stringify({
+          desiredTitle: query,
+          desiredLocation: location,
+          desiredCategory: category,
+          desiredJobType: jobType,
+          desiredExperienceLevel: experienceLevel,
+          minSalary: salaryMin ? Number(salaryMin) : null,
+          maxSalary: salaryMax ? Number(salaryMax) : null
+        })
+      });
+      setActionMessage("Đã lưu bộ lọc hiện tại thành nhu cầu công việc.");
+    } catch (err) {
+      setActionError((err.message || "").toLowerCase().includes("unauthorized")
+        ? "Bạn cần đăng nhập để lưu nhu cầu công việc."
+        : err.message || "Không thể lưu nhu cầu công việc.");
+    }
+  };
 
   return (
     <div className="topcv-shell">
@@ -191,8 +274,7 @@ const JobsList = () => {
             <span className="jobs-list-eyebrow">Danh sách việc làm</span>
             <h1>{categoryLabel}</h1>
             <p>
-              Lọc nhanh theo vị trí, công ty hoặc khu vực để tìm cơ hội phù hợp. Trang vẫn có trạng thái demo đẹp khi
-              backend chưa sẵn sàng.
+              Lọc nhanh theo vị trí, công ty hoặc khu vực để tìm cơ hội phù hợp. Trang vẫn có trạng thái demo đẹp khi backend chưa sẵn sàng.
             </p>
           </div>
           <div className="jobs-list-hero-card">
@@ -212,6 +294,15 @@ const JobsList = () => {
             />
           </label>
           <label>
+            Ngành nghề
+            <select value={category} onChange={(event) => updateFilter("category", event.target.value)}>
+              <option value="">Tất cả ngành nghề</option>
+              {metadata.categories.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+          <label>
             Khu vực
             <input
               value={location}
@@ -223,21 +314,18 @@ const JobsList = () => {
             Loại việc
             <select value={jobType} onChange={(event) => updateFilter("jobType", event.target.value)}>
               <option value="">Tất cả loại việc</option>
-              <option value="Full-time">Full-time</option>
-              <option value="Part-time">Part-time</option>
-              <option value="Contract">Contract</option>
-              <option value="Internship">Internship</option>
-              <option value="Remote">Remote</option>
+              {metadata.jobTypes.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
           </label>
           <label>
             Kinh nghiệm
             <select value={experienceLevel} onChange={(event) => updateFilter("experienceLevel", event.target.value)}>
               <option value="">Tất cả cấp độ</option>
-              <option value="ENTRY">Entry/Fresher</option>
-              <option value="MID">Middle</option>
-              <option value="SENIOR">Senior</option>
-              <option value="LEAD">Lead</option>
+              {metadata.experienceLevels.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
           </label>
           <label>
@@ -264,6 +352,7 @@ const JobsList = () => {
             Sắp xếp
             <select value={sort} onChange={(event) => updateFilter("sort", event.target.value)}>
               <option value="latest">Mới nhất</option>
+              <option value="match">Phù hợp nhất</option>
               <option value="salary_high">Lương cao nhất</option>
               <option value="salary_low">Lương thấp nhất</option>
             </select>
@@ -276,6 +365,30 @@ const JobsList = () => {
             ) : null}
           </div>
         </section>
+
+        <section className="jobs-list-smart-actions">
+          <div>
+            <strong>Tìm việc theo nhu cầu cá nhân</strong>
+            <p>Áp dụng nhu cầu đã lưu để ưu tiên các việc có điểm phù hợp cao hơn.</p>
+          </div>
+          <div>
+            <button type="button" onClick={applyMyNeeds}>Áp dụng nhu cầu của tôi</button>
+            <button type="button" onClick={saveFiltersToNeeds}>Lưu bộ lọc thành nhu cầu</button>
+          </div>
+        </section>
+
+        {activeChips.length > 0 ? (
+          <section className="jobs-list-active-chips" aria-label="Bộ lọc đang áp dụng">
+            {activeChips.map((chip) => (
+              <button key={chip.key} type="button" onClick={() => removeFilter(chip.key)}>
+                {chip.label} <span>×</span>
+              </button>
+            ))}
+          </section>
+        ) : null}
+
+        {actionMessage ? <p className="jobs-list-action-state success">{actionMessage}</p> : null}
+        {actionError ? <p className="jobs-list-action-state error">{actionError}</p> : null}
 
         {error ? (
           <section className="jobs-list-notice" role="status">
@@ -316,15 +429,16 @@ const JobsList = () => {
               ? visibleJobs.map((job) => (
                   <Link className="jobs-list-card" key={job.id ?? job.title} to={String(job.id || "").startsWith("demo-") ? "/" : `/jobs/${job.id}`}>
                     <div className="job-logo" data-fallback={(job.companyName || "C").trim().charAt(0).toUpperCase()}>
-                      {job.companyLogoUrl ? (
-                        <img src={job.companyLogoUrl} alt={job.companyName || "Logo"} onError={markLogoFailed} />
+                      {job.imageUrl || job.companyLogoUrl ? (
+                        <img src={job.imageUrl || job.companyLogoUrl} alt={job.title || job.companyName || "Logo"} onError={markLogoFailed} />
                       ) : (
                         <span>{(job.companyName || "C")[0]}</span>
                       )}
                     </div>
                     <div className="jobs-list-card-copy">
                       <div className="jobs-list-card-top">
-                        <span>{formatJobType(job)}</span>
+                        <span>{getOptionLabel(metadata.jobTypes, job.jobType, job.jobType || "Full-time")}</span>
+                        {job.matchScore ? <span className="jobs-list-match-badge">{Math.round(job.matchScore)}% phù hợp</span> : null}
                       </div>
                       <h2>{job.title}</h2>
                       <p>{job.companyName || "Đang cập nhật"}</p>

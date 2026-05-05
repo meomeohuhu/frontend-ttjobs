@@ -520,8 +520,8 @@ const CompanyDetail = () => {
                       displayJobs.map((job) => (
                         <Link key={job.id} to={`/jobs/${job.id}`} className="company-job-card">
                           <div className="company-job-logo">
-                            {job.companyLogoUrl ? (
-                              <img src={job.companyLogoUrl} alt={job.companyName || "Logo"} />
+                            {job.imageUrl || job.companyLogoUrl ? (
+                              <img src={job.imageUrl || job.companyLogoUrl} alt={job.title || job.companyName || "Logo"} />
                             ) : (
                               <span>{(job.companyName || "C")[0]}</span>
                             )}

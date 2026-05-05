@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../lib/api.js";
+import { fallbackJobMetadata, loadJobMetadata } from "../../lib/jobMetadata.js";
 import SettingsLayout from "./SettingsLayout.jsx";
 
 const emptyForm = {
@@ -10,33 +11,10 @@ const emptyForm = {
   desiredExperienceLevel: "",
   minSalary: "",
   maxSalary: "",
+  preferredSkills: "",
+  excludedKeywords: "",
   remoteOnly: false
 };
-
-const categoryOptions = [
-  { value: "INFORMATION-TECHNOLOGY", label: "Công nghệ thông tin" },
-  { value: "FINANCE", label: "Tài chính" },
-  { value: "SALES", label: "Kinh doanh / Sales" },
-  { value: "HR", label: "Nhân sự" },
-  { value: "ENGINEERING", label: "Kỹ thuật" },
-  { value: "DESIGNER", label: "Thiết kế" },
-  { value: "BUSINESS-DEVELOPMENT", label: "Phát triển kinh doanh" },
-  { value: "MARKETING", label: "Marketing" }
-];
-
-const jobTypeOptions = [
-  { value: "Full-time", label: "Toàn thời gian" },
-  { value: "Part-time", label: "Bán thời gian" },
-  { value: "Contract", label: "Hợp đồng" },
-  { value: "Internship", label: "Thực tập" },
-  { value: "Remote", label: "Từ xa" }
-];
-const experienceOptions = [
-  { value: "ENTRY", label: "Fresher / Entry" },
-  { value: "MID", label: "Middle" },
-  { value: "SENIOR", label: "Senior" },
-  { value: "LEAD", label: "Lead" }
-];
 
 const toFormState = (data) => ({
   desiredTitle: data?.desiredTitle || "",
@@ -48,10 +26,19 @@ const toFormState = (data) => ({
     data?.minSalary === null || data?.minSalary === undefined ? "" : String(data.minSalary),
   maxSalary:
     data?.maxSalary === null || data?.maxSalary === undefined ? "" : String(data.maxSalary),
+  preferredSkills: Array.isArray(data?.preferredSkills) ? data.preferredSkills.join(", ") : "",
+  excludedKeywords: Array.isArray(data?.excludedKeywords) ? data.excludedKeywords.join(", ") : "",
   remoteOnly: Boolean(data?.remoteOnly)
 });
 
+const splitCsv = (value) =>
+  String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
 const JobNeedsSettings = () => {
+  const [metadata, setMetadata] = useState(fallbackJobMetadata);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -66,12 +53,16 @@ const JobNeedsSettings = () => {
       setLoading(true);
       setError("");
       try {
-        const data = await apiRequest("/api/job-needs/preferences");
+        const [metadataData, preferenceData] = await Promise.all([
+          loadJobMetadata(),
+          apiRequest("/api/job-needs/preferences")
+        ]);
         if (!active) {
           return;
         }
-        setForm(toFormState(data));
-        setUpdatedAt(data?.updatedAt ? new Date(data.updatedAt).toLocaleString("vi-VN") : "");
+        setMetadata(metadataData);
+        setForm(toFormState(preferenceData));
+        setUpdatedAt(preferenceData?.updatedAt ? new Date(preferenceData.updatedAt).toLocaleString("vi-VN") : "");
       } catch (err) {
         if (active) {
           setError(err.message || "Không thể tải nhu cầu công việc");
@@ -118,6 +109,8 @@ const JobNeedsSettings = () => {
         desiredExperienceLevel: form.desiredExperienceLevel,
         minSalary,
         maxSalary,
+        preferredSkills: splitCsv(form.preferredSkills),
+        excludedKeywords: splitCsv(form.excludedKeywords),
         remoteOnly: form.remoteOnly
       };
 
@@ -180,7 +173,7 @@ const JobNeedsSettings = () => {
             <span>Ngành nghề</span>
             <select name="desiredCategory" value={form.desiredCategory} onChange={handleChange}>
               <option value="">Chọn ngành nghề</option>
-              {categoryOptions.map((option) => (
+              {metadata.categories.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -191,7 +184,7 @@ const JobNeedsSettings = () => {
             <span>Loại việc</span>
             <select name="desiredJobType" value={form.desiredJobType} onChange={handleChange}>
               <option value="">Chọn loại việc</option>
-              {jobTypeOptions.map((option) => (
+              {metadata.jobTypes.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -206,12 +199,30 @@ const JobNeedsSettings = () => {
               onChange={handleChange}
             >
               <option value="">Chọn mức kinh nghiệm</option>
-              {experienceOptions.map((option) => (
+              {metadata.experienceLevels.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
+          </label>
+          <label className="settings-field">
+            <span>Kỹ năng ưu tiên</span>
+            <input
+              name="preferredSkills"
+              value={form.preferredSkills}
+              onChange={handleChange}
+              placeholder="Java, Spring Boot, SQL"
+            />
+          </label>
+          <label className="settings-field">
+            <span>Từ khóa muốn loại trừ</span>
+            <input
+              name="excludedKeywords"
+              value={form.excludedKeywords}
+              onChange={handleChange}
+              placeholder="Intern, unpaid, onsite"
+            />
           </label>
           <label className="settings-field">
             <span>Làm từ xa</span>
@@ -232,7 +243,7 @@ const JobNeedsSettings = () => {
               min="0"
               value={form.minSalary}
               onChange={handleChange}
-              placeholder="Ví dụ: 15000000"
+              placeholder="15000000"
             />
           </label>
           <label className="settings-field">
@@ -243,17 +254,15 @@ const JobNeedsSettings = () => {
               min="0"
               value={form.maxSalary}
               onChange={handleChange}
-              placeholder="Ví dụ: 30000000"
+              placeholder="50000000"
             />
           </label>
         </div>
 
-        <div className="settings-actions">
-          <div className="settings-meta">
-            {updatedAt ? <span>Cập nhật lần cuối: {updatedAt}</span> : <span>Chưa lưu lần nào</span>}
-          </div>
-          <button type="submit" className="settings-primary-btn" disabled={saving}>
-            {saving ? "Đang lưu..." : "Lưu nhu cầu công việc"}
+        <div className="settings-form-footer">
+          <span>{updatedAt ? `Cập nhật lần cuối: ${updatedAt}` : "Chưa có dữ liệu cập nhật"}</span>
+          <button type="submit" disabled={saving}>
+            {saving ? "Đang lưu..." : "Lưu nhu cầu"}
           </button>
         </div>
       </form>

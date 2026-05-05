@@ -3,6 +3,7 @@ import { apiRequest } from "../../lib/api.js";
 import SettingsLayout from "./SettingsLayout.jsx";
 
 const emptyForm = {
+  email: "",
   name: "",
   phone: "",
   address: "",
@@ -19,6 +20,10 @@ const ProfileSettings = () => {
   const [profileId, setProfileId] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
+  const [emailForm, setEmailForm] = useState({ newEmail: "", code: "", requested: false });
+  const [emailMessage, setEmailMessage] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -35,6 +40,7 @@ const ProfileSettings = () => {
         setProfileId(data?.id ? `ID ${data.id}` : "");
         setAvatarUrl(data?.avatarUrl || "");
         setForm({
+          email: data?.email || "",
           name: data?.name || "",
           phone: data?.phone || "",
           address: data?.address || "",
@@ -116,6 +122,7 @@ const ProfileSettings = () => {
 
       setForm({
         name: data?.name || "",
+        email: data?.email || form.email,
         phone: data?.phone || "",
         address: data?.address || "",
         experienceYears:
@@ -129,6 +136,49 @@ const ProfileSettings = () => {
       setError(err.message || "Không thể lưu thông tin cá nhân");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const requestEmailCode = async () => {
+    setEmailSaving(true);
+    setEmailMessage("");
+    setEmailError("");
+    try {
+      await apiRequest("/api/users/me/email-change/request", {
+        method: "POST",
+        body: JSON.stringify({ newEmail: emailForm.newEmail.trim() })
+      });
+      setEmailForm((prev) => ({ ...prev, requested: true }));
+      setEmailMessage("Đã gửi mã xác nhận đến email mới.");
+    } catch (err) {
+      setEmailError(err.message || "Không thể gửi mã xác nhận");
+    } finally {
+      setEmailSaving(false);
+    }
+  };
+
+  const confirmEmailChange = async () => {
+    setEmailSaving(true);
+    setEmailMessage("");
+    setEmailError("");
+    try {
+      const data = await apiRequest("/api/users/me/email-change/confirm", {
+        method: "POST",
+        body: JSON.stringify({
+          newEmail: emailForm.newEmail.trim(),
+          code: emailForm.code.trim()
+        })
+      });
+      if (data?.token) {
+        localStorage.setItem("ttjobs_token", data.token);
+      }
+      setForm((prev) => ({ ...prev, email: data?.email || emailForm.newEmail.trim() }));
+      setEmailForm({ newEmail: "", code: "", requested: false });
+      setEmailMessage("Đã đổi email đăng nhập.");
+    } catch (err) {
+      setEmailError(err.message || "Không thể xác nhận đổi email");
+    } finally {
+      setEmailSaving(false);
     }
   };
 
@@ -174,6 +224,10 @@ const ProfileSettings = () => {
         </div>
 
         <div className="settings-grid">
+          <label className="settings-field settings-field-wide">
+            <span>Email hiện tại</span>
+            <input name="email" value={form.email} readOnly />
+          </label>
           <label className="settings-field">
             <span>Họ và tên</span>
             <input name="name" value={form.name} onChange={handleChange} />
@@ -214,6 +268,43 @@ const ProfileSettings = () => {
           </button>
         </div>
       </form>
+
+      <section className="settings-card settings-form">
+        <div>
+          <h2 className="settings-section-title">Đổi email đăng nhập</h2>
+          <p className="settings-state">Nhập email mới, TTJobs sẽ gửi mã xác nhận để hoàn tất thay đổi.</p>
+        </div>
+        {emailError ? <p className="settings-error">{emailError}</p> : null}
+        {emailMessage ? <p className="settings-success">{emailMessage}</p> : null}
+        <div className="settings-grid">
+          <label className="settings-field">
+            <span>Email mới</span>
+            <input
+              type="email"
+              value={emailForm.newEmail}
+              onChange={(event) => setEmailForm((prev) => ({ ...prev, newEmail: event.target.value }))}
+              placeholder="email-moi@example.com"
+            />
+          </label>
+          <label className="settings-field">
+            <span>Mã xác nhận</span>
+            <input
+              value={emailForm.code}
+              onChange={(event) => setEmailForm((prev) => ({ ...prev, code: event.target.value }))}
+              placeholder="6 chữ số"
+              inputMode="numeric"
+            />
+          </label>
+        </div>
+        <div className="settings-actions">
+          <button type="button" className="settings-secondary-button" disabled={emailSaving || !emailForm.newEmail.trim()} onClick={requestEmailCode}>
+            {emailSaving ? "Đang gửi..." : "Gửi mã"}
+          </button>
+          <button type="button" className="settings-primary-btn" disabled={emailSaving || !emailForm.newEmail.trim() || !emailForm.code.trim()} onClick={confirmEmailChange}>
+            Xác nhận đổi email
+          </button>
+        </div>
+      </section>
     </SettingsLayout>
   );
 };

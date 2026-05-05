@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
+import ToolGlyph from "../tools/components/ToolGlyph.jsx";
+import { toolsByGroup } from "../tools/toolsCatalog.js";
 
 const iconPaths = {
   jobs: (
@@ -79,10 +81,20 @@ const HeaderIcon = ({ name, className = "" }) => (
 const navItems = [
   { label: "Việc làm", to: "/", icon: "jobs" },
   { label: "Hồ sơ", to: "/create-cv", icon: "cv" },
-  { label: "Công cụ", to: "#", icon: "tools" },
+  { label: "Công cụ", to: "/tools", icon: "tools", mega: true },
   { label: "Cẩm nang", to: "/career-guide", icon: "guide" },
   { label: "TTJobs", to: "#", icon: "sparkle" }
 ];
+
+const toolsMegaMenu = toolsByGroup.map((group) => ({
+  title: group.eyebrow,
+  items: group.tools.map((tool) => ({
+    label: tool.title,
+    to: tool.to,
+    badge: tool.badge,
+    icon: tool.icon
+  }))
+}));
 
 const menuSections = [
   {
@@ -99,10 +111,10 @@ const menuSections = [
     title: "Quản lý CV & Cover Letter",
     icon: "cv",
     items: [
-      { label: "CV của tôi", actionLabel: "CV của tôi" },
-      { label: "Cover Letter của tôi", actionLabel: "Cover Letter của tôi" },
-      { label: "Nhà tuyển dụng muốn kết nối với bạn", actionLabel: "Kết nối với nhà tuyển dụng" },
-      { label: "Nhà tuyển dụng xem hồ sơ", actionLabel: "Lượt xem hồ sơ" }
+      { label: "CV của tôi", to: "/user/cv" },
+      { label: "Cover Letter của tôi", to: "/user/cover-letters" },
+      { label: "Nhà tuyển dụng muốn kết nối với bạn", to: "/user/recruiter-connections" },
+      { label: "Nhà tuyển dụng xem hồ sơ", to: "/user/profile-views" }
     ]
   },
   {
@@ -132,7 +144,9 @@ const HomeHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const menuRef = useRef(null);
+  const toolsMenuRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     "Cài đặt email & thông báo": true,
     "Cá nhân & bảo mật": true
@@ -183,11 +197,15 @@ const HomeHeader = () => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false);
       }
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target)) {
+        setIsToolsMenuOpen(false);
+      }
     };
 
     const handleEscape = (event) => {
       if (event.key === "Escape") {
         setIsMenuOpen(false);
+        setIsToolsMenuOpen(false);
       }
     };
 
@@ -266,6 +284,9 @@ const HomeHeader = () => {
     if (path.startsWith("/create-cv") || path.startsWith("/user")) {
       return "Hồ sơ";
     }
+    if (path.startsWith("/tools")) {
+      return "Công cụ";
+    }
     if (path.startsWith("/career-guide")) {
       return "Cẩm nang";
     }
@@ -307,158 +328,200 @@ const HomeHeader = () => {
 
       <nav className="topcv-nav">
         {navItems.map((item) => (
-          <Link
-            className="nav-item"
-            key={item.label}
-            to={item.to}
-            aria-current={activeNavLabel === item.label ? "page" : undefined}
-            data-active={activeNavLabel === item.label ? "true" : "false"}
-          >
-            <HeaderIcon name={item.icon} className="nav-icon" />
-            <span>{item.label}</span>
-          </Link>
+          item.mega ? (
+            <div className="nav-mega-wrap" key={item.label} ref={toolsMenuRef}>
+              <button
+                className="nav-item nav-mega-trigger"
+                type="button"
+                aria-expanded={isToolsMenuOpen}
+                data-active={activeNavLabel === item.label ? "true" : "false"}
+                onClick={() => setIsToolsMenuOpen((value) => !value)}
+              >
+                <HeaderIcon name={item.icon} className="nav-icon" />
+                <span>{item.label}</span>
+                <span className="nav-chevron">{isToolsMenuOpen ? "⌃" : "⌄"}</span>
+              </button>
+              {isToolsMenuOpen ? (
+                <div className="tools-mega-menu">
+                  {toolsMegaMenu.map((section) => (
+                    <div className="tools-mega-section" key={section.title}>
+                      <h3>{section.title}</h3>
+                      {section.items.map((menuItem) => (
+                        <Link
+                          key={menuItem.label}
+                          to={menuItem.to}
+                          className="tools-mega-link"
+                          data-active={location.pathname === menuItem.to ? "true" : "false"}
+                          onClick={() => setIsToolsMenuOpen(false)}
+                        >
+                          <span className="tools-mega-icon">
+                            <ToolGlyph name={menuItem.icon} />
+                          </span>
+                          <strong>{menuItem.label}</strong>
+                          {menuItem.badge ? <em>{menuItem.badge}</em> : null}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <Link
+              className="nav-item"
+              key={item.label}
+              to={item.to}
+              aria-current={activeNavLabel === item.label ? "page" : undefined}
+              data-active={activeNavLabel === item.label ? "true" : "false"}
+            >
+              <HeaderIcon name={item.icon} className="nav-icon" />
+              <span>{item.label}</span>
+            </Link>
+          )
         ))}
       </nav>
 
       <div className="topcv-actions">
-        <div className="icon-group">
-          {isLoggedIn && !isRecruiterRole ? (
-            <Link className="icon-btn user-quick-icon" to="/messages" aria-label="Tin nhắn">
-              <HeaderIcon name="chat" className="header-action-icon" />
-              {messageUnreadCount > 0 ? <span className="icon-badge">{messageUnreadCount}</span> : null}
-            </Link>
-          ) : null}
-          {isRecruiterRole ? (
-            <>
-              <Link className="icon-btn recruiter-quick-icon" to="/recruiter/chat" aria-label="Trò chuyện">
-                <HeaderIcon name="chat" className="header-action-icon" />
-                {messageUnreadCount > 0 ? <span className="icon-badge">{messageUnreadCount}</span> : null}
-              </Link>
-              <Link className="icon-btn recruiter-quick-icon" to="/recruiter/notifications" aria-label="Thông báo">
-                <HeaderIcon name="bell" className="header-action-icon" />
-                {recruiterUnreadCount > 0 ? <span className="icon-badge">{recruiterUnreadCount}</span> : null}
-              </Link>
-            </>
-          ) : null}
+        {isLoggedIn ? (
+          <>
+            <div className="icon-group">
+              {!isRecruiterRole ? (
+                <Link className="icon-btn user-quick-icon" to="/messages" aria-label="Tin nhắn">
+                  <HeaderIcon name="chat" className="header-action-icon" />
+                  {messageUnreadCount > 0 ? <span className="icon-badge">{messageUnreadCount}</span> : null}
+                </Link>
+              ) : null}
+              {isRecruiterRole ? (
+                <>
+                  <Link className="icon-btn recruiter-quick-icon" to="/recruiter/chat" aria-label="Trò chuyện">
+                    <HeaderIcon name="chat" className="header-action-icon" />
+                    {messageUnreadCount > 0 ? <span className="icon-badge">{messageUnreadCount}</span> : null}
+                  </Link>
+                  <Link className="icon-btn recruiter-quick-icon" to="/recruiter/notifications" aria-label="Thông báo">
+                    <HeaderIcon name="bell" className="header-action-icon" />
+                    {recruiterUnreadCount > 0 ? <span className="icon-badge">{recruiterUnreadCount}</span> : null}
+                  </Link>
+                </>
+              ) : null}
 
-          <div className="account-menu" ref={menuRef}>
-            <button
-              className={`icon-btn account-trigger ${isLoggedIn ? "is-logged-in" : ""}`}
-              type="button"
-              aria-label="Tài khoản"
-              aria-expanded={isMenuOpen}
-              onClick={() => {
-                if (!isLoggedIn) {
-                  navigate("/login");
-                  return;
-                }
-                setIsMenuOpen((prev) => !prev);
-              }}
-            >
-              {profile?.avatarUrl ? (
-                <img className="avatar-image" src={profile.avatarUrl} alt={accountName} />
-              ) : (
-                <span className="avatar-fallback">{avatarLabel}</span>
-              )}
-              <span className="account-caret" />
-            </button>
-
-            {isLoggedIn && isMenuOpen ? (
-              <div className="account-dropdown">
-                <div className="account-summary">
-                  <div className="account-avatar">
-                    {profile?.avatarUrl ? (
-                      <img src={profile.avatarUrl} alt={accountName} />
-                    ) : (
-                      <span>{avatarLabel}</span>
-                    )}
-                  </div>
-                  <div className="account-summary-copy">
-                    <h3>{accountName}</h3>
-                    <p>Tài khoản đã xác thực</p>
-                    <span>
-                      {accountId} | {accountEmail}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="account-scroll">
-                  {menuSections.map((section) => (
-                    <div className="account-section" key={section.title}>
-                      <button
-                        type="button"
-                        className={`account-section-title ${expandedSections[section.title] ? "is-open" : ""}`}
-                        onClick={() => toggleSection(section.title)}
-                        aria-expanded={Boolean(expandedSections[section.title])}
-                      >
-                        <span className={`section-icon ${section.icon}`} />
-                        <strong>{section.title}</strong>
-                        <span className="section-caret" />
-                      </button>
-                      {expandedSections[section.title] ? (
-                        <div className="account-section-items">
-                          {section.items.map((item) =>
-                            item.to ? (
-                              <Link
-                                key={item.label}
-                                to={item.to}
-                                className="account-link"
-                                onClick={() => setIsMenuOpen(false)}
-                              >
-                                {item.label}
-                              </Link>
-                            ) : (
-                              <button
-                                key={item.label}
-                                type="button"
-                                className="account-link account-link-button"
-                                onClick={() => openPlaceholder(item.actionLabel)}
-                              >
-                                {item.label}
-                              </button>
-                            )
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-
-                <button type="button" className="account-logout" onClick={handleLogout}>
-                  Đăng xuất
+              <div className="account-menu" ref={menuRef}>
+                <button
+                  className="icon-btn account-trigger is-logged-in"
+                  type="button"
+                  aria-label="Tài khoản"
+                  aria-expanded={isMenuOpen}
+                  onClick={() => setIsMenuOpen((prev) => !prev)}
+                >
+                  {profile?.avatarUrl ? (
+                    <img className="avatar-image" src={profile.avatarUrl} alt={accountName} />
+                  ) : (
+                    <span className="avatar-fallback">{avatarLabel}</span>
+                  )}
+                  <span className="account-caret" />
                 </button>
-              </div>
-            ) : null}
-          </div>
-        </div>
 
-        <div className="recruiter-link">
-          {isRecruiterRole ? (
-            <>
-              <span>Workspace tuyển dụng</span>
-              <Link to="/recruiter/dashboard">
-                <HeaderIcon name="dashboard" className="recruiter-link-icon" />
-                <span>Mở dashboard</span>
-              </Link>
-            </>
-          ) : isLoggedIn ? (
-            <>
-              <span>Workspace ứng viên</span>
-              <Link to="/user/dashboard">
-                <HeaderIcon name="dashboard" className="recruiter-link-icon" />
-                <span>Mở dashboard</span>
-              </Link>
-            </>
-          ) : (
-            <>
-              <span>Bạn là nhà tuyển dụng?</span>
-              <Link to="/register">
-                <HeaderIcon name="jobs" className="recruiter-link-icon" />
-                <span>Đăng tuyển ngay</span>
-              </Link>
-            </>
-          )}
-        </div>
+                {isMenuOpen ? (
+                  <div className="account-dropdown">
+                    <div className="account-summary">
+                      <div className="account-avatar">
+                        {profile?.avatarUrl ? (
+                          <img src={profile.avatarUrl} alt={accountName} />
+                        ) : (
+                          <span>{avatarLabel}</span>
+                        )}
+                      </div>
+                      <div className="account-summary-copy">
+                        <h3>{accountName}</h3>
+                        <p>Tài khoản đã xác thực</p>
+                        <span>
+                          {accountId} | {accountEmail}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="account-scroll">
+                      {menuSections.map((section) => (
+                        <div className="account-section" key={section.title}>
+                          <button
+                            type="button"
+                            className={`account-section-title ${expandedSections[section.title] ? "is-open" : ""}`}
+                            onClick={() => toggleSection(section.title)}
+                            aria-expanded={Boolean(expandedSections[section.title])}
+                          >
+                            <span className={`section-icon ${section.icon}`} />
+                            <strong>{section.title}</strong>
+                            <span className="section-caret" />
+                          </button>
+                          {expandedSections[section.title] ? (
+                            <div className="account-section-items">
+                              {section.items.map((item) =>
+                                item.to ? (
+                                  <Link
+                                    key={item.label}
+                                    to={item.to}
+                                    className="account-link"
+                                    onClick={() => setIsMenuOpen(false)}
+                                  >
+                                    {item.label}
+                                  </Link>
+                                ) : (
+                                  <button
+                                    key={item.label}
+                                    type="button"
+                                    className="account-link account-link-button"
+                                    onClick={() => openPlaceholder(item.actionLabel)}
+                                  >
+                                    {item.label}
+                                  </button>
+                                )
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+
+                    <button type="button" className="account-logout" onClick={handleLogout}>
+                      Đăng xuất
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="recruiter-link">
+              {isRecruiterRole ? (
+                <>
+                  <span>Workspace tuyển dụng</span>
+                  <Link to="/recruiter/dashboard">
+                    <HeaderIcon name="dashboard" className="recruiter-link-icon" />
+                    <span>Mở dashboard</span>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <span>Workspace ứng viên</span>
+                  <Link to="/user/dashboard">
+                    <HeaderIcon name="dashboard" className="recruiter-link-icon" />
+                    <span>Mở dashboard</span>
+                  </Link>
+                </>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="header-auth-group">
+            <Link to="/register" className="btn-auth btn-register">
+              Đăng ký
+            </Link>
+            <Link to="/login" className="btn-auth btn-login">
+              Đăng nhập
+            </Link>
+            <Link to="/recruiter/login" className="btn-auth btn-recruiter">
+              Đăng tuyển & tìm hồ sơ
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   );

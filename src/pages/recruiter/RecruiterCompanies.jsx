@@ -41,6 +41,11 @@ const RecruiterCompanies = () => {
       const data = await apiRequest("/api/recruiter/companies");
       setCompanies(Array.isArray(data) ? data : []);
     } catch (err) {
+      setCompanies([]);
+      setSelectedId("");
+      setForm(emptyCompany);
+      setMembers([]);
+      setLogoFile(null);
       setError(err.message || "Không thể tải công ty");
     } finally {
       setLoading(false);

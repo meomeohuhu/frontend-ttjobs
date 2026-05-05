@@ -179,8 +179,8 @@ const HighlightJobsSection = ({
                   </button>
                   <Link to={isDemoJob ? "/jobs" : `/jobs/${job.id}`} className="job-card-link highlight-job-link">
                     <div className="job-logo" data-fallback={(job.companyName || "C").trim().charAt(0).toUpperCase()}>
-                      {job.companyLogoUrl ? (
-                        <img src={job.companyLogoUrl} alt={job.companyName || "Logo"} onError={markLogoFailed} />
+                      {job.imageUrl || job.companyLogoUrl ? (
+                        <img src={job.imageUrl || job.companyLogoUrl} alt={job.title || job.companyName || "Logo"} onError={markLogoFailed} />
                       ) : (
                         <span>{(job.companyName || "C")[0]}</span>
                       )}

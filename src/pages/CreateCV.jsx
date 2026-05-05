@@ -356,7 +356,7 @@ const CreateCV = () => {
                     <span style={{ fontSize: "18px" }}>✅</span>
                     <div style={{ flex: 1 }}>
                       <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#166534" }}>CV của bạn hiện đang ở trên hệ thống</p>
-                      <a href={form.cvUrl} target="_blank" rel="noreferrer" style={{ fontSize: "12px", color: "#15803d" }}>Xem CV trên Cloudinary</a>
+                      <a href={form.cvUrl} target="_blank" rel="noreferrer" style={{ fontSize: "12px", color: "#2563eb" }}>Xem CV trên Cloudinary</a>
                     </div>
                   </div>
                 )}

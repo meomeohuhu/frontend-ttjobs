@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../../lib/api.js";
+import { fallbackJobMetadata, loadJobMetadata, loadProvinceGroups } from "../../lib/jobMetadata.js";
 import RecruiterLayout from "./RecruiterLayout.jsx";
 import { formatDate, formatNumber, formatSalary, jobStatuses } from "./recruiterUtils.js";
 
@@ -44,6 +45,7 @@ const toJobForm = (job) => ({
 });
 
 const RecruiterJobs = () => {
+  const [metadata, setMetadata] = useState(fallbackJobMetadata);
   const [companies, setCompanies] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState("");
@@ -54,11 +56,51 @@ const RecruiterJobs = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [provinceQuery, setProvinceQuery] = useState("");
+  const [locationGroups, setLocationGroups] = useState(fallbackJobMetadata.locationsFallback);
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState(null);
+  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
 
   const selectedJob = useMemo(
     () => jobs.find((job) => String(job.id) === String(selectedJobId)) || null,
     [jobs, selectedJobId]
   );
+
+  const knownCategories = useMemo(
+    () => new Set(metadata.categories.map((option) => option.value)),
+    [metadata.categories]
+  );
+
+  const filteredLocationGroups = useMemo(() => {
+    const query = provinceQuery.trim().toLowerCase();
+    if (!query) return locationGroups;
+    return locationGroups.filter((group) => group.province.toLowerCase().includes(query));
+  }, [locationGroups, provinceQuery]);
+
+  const selectedProvinceEntry = useMemo(
+    () => locationGroups.find((group) => group.code === selectedProvinceCode) || null,
+    [locationGroups, selectedProvinceCode]
+  );
+
+  const selectedLocationLabel = form.location || "Chọn địa điểm";
+
+  const syncLocationPickerFromValue = (value, groups = locationGroups) => {
+    const location = value || "";
+    const matchedGroup = groups.find(
+      (group) => group.province === location || group.districts.includes(location)
+    );
+    if (!matchedGroup) {
+      setSelectedProvinceCode(null);
+      setSelectedProvince("");
+      setSelectedDistrict("");
+      return;
+    }
+    setSelectedProvinceCode(matchedGroup.code);
+    setSelectedProvince(matchedGroup.province);
+    setSelectedDistrict(matchedGroup.districts.includes(location) ? location : "");
+  };
 
   const loadCompanies = async () => {
     const data = await apiRequest("/api/recruiter/companies");
@@ -87,7 +129,23 @@ const RecruiterJobs = () => {
   };
 
   useEffect(() => {
+    let active = true;
+
+    const loadMetadataAndLocations = async () => {
+      const data = await loadJobMetadata();
+      const groups = await loadProvinceGroups(data.locationsFallback);
+      if (!active) return;
+      setMetadata(data);
+      setLocationGroups(groups);
+      syncLocationPickerFromValue(form.location, groups);
+    };
+
     loadCompanies().catch(() => setCompanies([]));
+    loadMetadataAndLocations();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -97,6 +155,7 @@ const RecruiterJobs = () => {
   useEffect(() => {
     if (selectedJob) {
       setForm(toJobForm(selectedJob));
+      syncLocationPickerFromValue(selectedJob.location);
       setImageFile(null);
     }
   }, [selectedJob]);
@@ -109,6 +168,32 @@ const RecruiterJobs = () => {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const openLocationPicker = () => {
+    syncLocationPickerFromValue(form.location);
+    setShowLocationPicker((prev) => !prev);
+  };
+
+  const handleProvinceSelect = (group) => {
+    setSelectedProvinceCode(group.code);
+    setSelectedProvince(group.province);
+    setSelectedDistrict("");
+  };
+
+  const clearLocation = () => {
+    setForm((prev) => ({ ...prev, location: "" }));
+    setSelectedProvinceCode(null);
+    setSelectedProvince("");
+    setSelectedDistrict("");
+    setProvinceQuery("");
+    setShowLocationPicker(false);
+  };
+
+  const applyLocation = () => {
+    const nextLocation = selectedDistrict || selectedProvince;
+    setForm((prev) => ({ ...prev, location: nextLocation }));
+    setShowLocationPicker(false);
   };
 
   const handleImageFile = (event) => {
@@ -130,6 +215,7 @@ const RecruiterJobs = () => {
   const resetCreate = () => {
     setSelectedJobId("");
     setForm({ ...emptyJob, companyId: companies[0]?.id ? String(companies[0].id) : "" });
+    clearLocation();
     setImageFile(null);
     setMessage("");
     setError("");
@@ -157,6 +243,11 @@ const RecruiterJobs = () => {
   };
 
   const submitJob = async (status) => {
+    if (!form.location) {
+      setError("Vui lòng chọn địa điểm.");
+      setShowLocationPicker(true);
+      return;
+    }
     setSaving(true);
     setMessage("");
     setError("");
@@ -297,6 +388,10 @@ const RecruiterJobs = () => {
               <span>Tiêu đề</span>
               <input name="title" value={form.title} onChange={handleChange} required />
             </label>
+            <label className="wide">
+              <span>Image URL</span>
+              <input name="imageUrl" value={form.imageUrl} onChange={handleChange} placeholder="https://..." />
+            </label>
             <label>
               <span>Công ty</span>
               <select name="companyId" value={form.companyId} onChange={handleChange} required disabled={Boolean(selectedJob)}>
@@ -314,32 +409,107 @@ const RecruiterJobs = () => {
                 ))}
               </select>
             </label>
-            <label>
+            <label className="recruiter-location-field">
               <span>Địa điểm</span>
-              <input name="location" value={form.location} onChange={handleChange} />
+              <button type="button" className="search-location-toggle recruiter-location-toggle" onClick={openLocationPicker}>
+                <span className="search-icon pin" />
+                <span className="search-location-label">{selectedLocationLabel}</span>
+                <span className="caret" />
+              </button>
+
+              {showLocationPicker ? (
+                <div className="location-picker recruiter-location-picker">
+                  <div className="location-picker-head">
+                    <span>Tìm theo:</span>
+                    <button type="button" className="location-mode active">Tỉnh, quận/huyện</button>
+                  </div>
+
+                  <div className="location-picker-search">
+                    <span className="search-icon menu" />
+                    <input
+                      type="text"
+                      placeholder="Nhập tỉnh/thành phố"
+                      value={provinceQuery}
+                      onChange={(event) => setProvinceQuery(event.target.value)}
+                    />
+                  </div>
+
+                  <div className="location-picker-body">
+                    <div className="province-list">
+                      {filteredLocationGroups.map((group) => (
+                        <button
+                          key={group.province}
+                          type="button"
+                          className={group.province === selectedProvince ? "active" : ""}
+                          onClick={() => handleProvinceSelect(group)}
+                        >
+                          {group.province}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="district-list">
+                      {selectedProvinceEntry ? (
+                        <>
+                          <div className="district-list-head">
+                            <strong>{selectedProvince}</strong>
+                            <span>Quận/huyện</span>
+                          </div>
+                          <div className="district-chips">
+                            {selectedProvinceEntry.districts.map((district) => (
+                              <button
+                                key={district}
+                                type="button"
+                                className={district === selectedDistrict ? "active" : ""}
+                                onClick={() => setSelectedDistrict(district)}
+                              >
+                                {district}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="district-empty">
+                          <div className="district-empty-illustration" />
+                          <p>Vui lòng chọn tỉnh/thành phố trước khi áp dụng.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="location-picker-footer">
+                    <button type="button" className="location-clear" onClick={clearLocation}>Bỏ chọn tất cả</button>
+                    <button type="button" className="location-apply" onClick={applyLocation}>Áp dụng</button>
+                  </div>
+                </div>
+              ) : null}
             </label>
             <label>
               <span>Loại việc</span>
               <select name="jobType" value={form.jobType} onChange={handleChange}>
-                <option value="Full-time">Toàn thời gian</option>
-                <option value="Part-time">Bán thời gian</option>
-                <option value="Contract">Hợp đồng</option>
-                <option value="Internship">Thực tập</option>
-                <option value="Remote">Từ xa</option>
+                {metadata.jobTypes.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </label>
             <label>
               <span>Kinh nghiệm</span>
               <select name="experienceLevel" value={form.experienceLevel} onChange={handleChange}>
-                <option value="ENTRY">Entry</option>
-                <option value="MID">Middle</option>
-                <option value="SENIOR">Senior</option>
-                <option value="LEAD">Lead</option>
+                {metadata.experienceLevels.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </label>
             <label>
               <span>Ngành nghề</span>
-              <input name="category" value={form.category} onChange={handleChange} />
+              <select name="category" value={form.category} onChange={handleChange} required>
+                {form.category && !knownCategories.has(form.category) ? (
+                  <option value={form.category}>{form.category}</option>
+                ) : null}
+                {metadata.categories.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
             </label>
             <label>
               <span>Lương tối thiểu</span>

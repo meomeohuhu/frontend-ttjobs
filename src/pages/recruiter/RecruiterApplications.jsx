@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../lib/api.js";
 import RecruiterLayout from "./RecruiterLayout.jsx";
 import {
@@ -12,6 +12,7 @@ import {
 
 const RecruiterApplications = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [companies, setCompanies] = useState([]);
   const [jobs, setJobs] = useState([]);
@@ -21,14 +22,19 @@ const RecruiterApplications = () => {
     companyId: searchParams.get("companyId") || "",
     jobId: searchParams.get("jobId") || "",
     status: searchParams.get("status") || "",
-    keyword: searchParams.get("keyword") || ""
+    keyword: searchParams.get("keyword") || "",
+    minAiScore: searchParams.get("minAiScore") || "60"
   });
+  const [aiMode, setAiMode] = useState(searchParams.get("ai") === "1");
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [aiScoring, setAiScoring] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkStatus, setBulkStatus] = useState("reviewing");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [detailPosition, setDetailPosition] = useState({ x: 24, y: 96 });
+  const [dragState, setDragState] = useState(null);
 
   const grouped = useMemo(() => {
     const map = Object.fromEntries(applicationStatuses.map((status) => [status, []]));
@@ -58,8 +64,16 @@ const RecruiterApplications = () => {
       if (filters.jobId) query.set("jobId", filters.jobId);
       if (filters.status) query.set("status", filters.status);
       if (filters.keyword) query.set("keyword", filters.keyword);
+      if (aiMode) {
+        query.set("ai", "1");
+        query.set("minScore", filters.minAiScore || "0");
+        query.set("minAiScore", filters.minAiScore || "0");
+      }
       setSearchParams(query, { replace: true });
-      const data = await apiRequest(`/api/recruiter/applications?${query.toString()}`);
+      const endpoint = aiMode ? "/api/recruiter/applications/ai-screen" : "/api/recruiter/applications";
+      const data = await apiRequest(`${endpoint}?${query.toString()}`, {
+        method: aiMode ? "POST" : "GET"
+      });
       setApplications(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message || "Không thể tải ứng viên");
@@ -91,11 +105,34 @@ const RecruiterApplications = () => {
 
   useEffect(() => {
     loadApplications();
-  }, [filters.companyId, filters.jobId, filters.status, filters.keyword]);
+  }, [filters.companyId, filters.jobId, filters.status, filters.keyword, filters.minAiScore, aiMode]);
 
   useEffect(() => {
     loadDetail(id);
   }, [id]);
+
+  useEffect(() => {
+    if (!dragState) return undefined;
+
+    const move = (event) => {
+      const point = event.touches?.[0] || event;
+      const nextX = Math.max(8, Math.min(window.innerWidth - 332, point.clientX - dragState.offsetX));
+      const nextY = Math.max(8, Math.min(window.innerHeight - 120, point.clientY - dragState.offsetY));
+      setDetailPosition({ x: nextX, y: nextY });
+    };
+    const stop = () => setDragState(null);
+
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", stop);
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("touchend", stop);
+    return () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", stop);
+      window.removeEventListener("touchmove", move);
+      window.removeEventListener("touchend", stop);
+    };
+  }, [dragState]);
 
   const handleFilter = (event) => {
     const { name, value } = event.target;
@@ -104,6 +141,20 @@ const RecruiterApplications = () => {
       [name]: value,
       ...(name === "companyId" ? { jobId: "" } : {})
     }));
+  };
+
+  const closeDetail = () => {
+    setDetail(null);
+    setDragState(null);
+    navigate(`/recruiter/applications?${searchParams.toString()}`, { replace: true });
+  };
+
+  const startDetailDrag = (event) => {
+    const point = event.touches?.[0] || event;
+    setDragState({
+      offsetX: point.clientX - detailPosition.x,
+      offsetY: point.clientY - detailPosition.y
+    });
   };
 
   const toggleSelected = (applicationId) => {
@@ -144,6 +195,55 @@ const RecruiterApplications = () => {
       if (id) await loadDetail(id);
     } catch (err) {
       setError(err.message || "Không thể cập nhật hàng loạt");
+    }
+  };
+
+  const buildAiQuery = (refresh = false) => {
+    const query = new URLSearchParams();
+    if (filters.companyId) query.set("companyId", filters.companyId);
+    if (filters.jobId) query.set("jobId", filters.jobId);
+    if (filters.status) query.set("status", filters.status);
+    if (filters.keyword) query.set("keyword", filters.keyword);
+    query.set("minScore", filters.minAiScore || "0");
+    if (refresh) query.set("refresh", "true");
+    return query;
+  };
+
+  const refreshAiScores = async () => {
+    setAiScoring(true);
+    setError("");
+    setMessage("");
+    try {
+      const data = await apiRequest(`/api/recruiter/applications/ai-screen?${buildAiQuery(true).toString()}`, {
+        method: "POST"
+      });
+      setAiMode(true);
+      setApplications(Array.isArray(data) ? data : []);
+      setMessage("AI đã chấm và lọc CV theo mô tả công việc.");
+      if (id) await loadDetail(id);
+    } catch (err) {
+      setError(err.message || "Không thể chấm CV bằng AI");
+    } finally {
+      setAiScoring(false);
+    }
+  };
+
+  const scoreCurrentApplication = async () => {
+    if (!detail?.id) return;
+    setAiScoring(true);
+    setError("");
+    setMessage("");
+    try {
+      const data = await apiRequest(`/api/recruiter/applications/${detail.id}/ai-score?refresh=true`, {
+        method: "POST"
+      });
+      setDetail(data || null);
+      setMessage("AI đã chấm lại CV này.");
+      await loadApplications();
+    } catch (err) {
+      setError(err.message || "Không thể chấm CV này bằng AI");
+    } finally {
+      setAiScoring(false);
     }
   };
 
@@ -194,6 +294,13 @@ const RecruiterApplications = () => {
           onChange={handleFilter}
           placeholder="Tìm ứng viên, job, công ty"
         />
+        <select name="minAiScore" value={filters.minAiScore} onChange={handleFilter}>
+          <option value="0">Mọi điểm AI</option>
+          <option value="50">AI từ 50</option>
+          <option value="60">AI từ 60</option>
+          <option value="70">AI từ 70</option>
+          <option value="80">AI từ 80</option>
+        </select>
       </section>
 
       <section className="recruiter-bulk-bar">
@@ -205,6 +312,12 @@ const RecruiterApplications = () => {
         </select>
         <button type="button" className="recruiter-secondary-action" disabled={selectedIds.length === 0} onClick={bulkUpdateStatus}>
           Cập nhật hàng loạt
+        </button>
+        <button type="button" className="recruiter-primary-action" disabled={aiScoring} onClick={() => setAiMode((value) => !value)}>
+          {aiMode ? "Tắt lọc AI" : "Bật lọc AI"}
+        </button>
+        <button type="button" className="recruiter-secondary-action" disabled={aiScoring} onClick={refreshAiScores}>
+          {aiScoring ? "AI đang chấm..." : "Chấm lại bằng AI"}
         </button>
       </section>
 
@@ -233,6 +346,12 @@ const RecruiterApplications = () => {
                     <strong>{application.candidateName || "Ứng viên"}</strong>
                     <span>{application.jobTitle}</span>
                     <small>{application.companyName}</small>
+                    {application.aiScoreAvailable ? (
+                      <div className={`recruiter-ai-score ${application.aiScore >= 80 ? "strong" : application.aiScore >= 60 ? "medium" : "weak"}`}>
+                        <b>{application.aiScore}</b>
+                        <span>{application.aiLevel || "AI match"}</span>
+                      </div>
+                    ) : null}
                     <div>
                       <em>{formatDate(application.applicationDate)}</em>
                       {application.hasCv ? <b>CV</b> : null}
@@ -248,12 +367,29 @@ const RecruiterApplications = () => {
         </div>
 
         {id ? (
-          <aside className="recruiter-detail-panel">
+          <div className="recruiter-detail-overlay" onMouseDown={closeDetail} onTouchStart={closeDetail}>
+          <aside
+            className="recruiter-detail-panel"
+            style={{ left: detailPosition.x, top: detailPosition.y }}
+            onMouseDown={(event) => event.stopPropagation()}
+            onTouchStart={(event) => event.stopPropagation()}
+          >
             {detailLoading ? <p className="recruiter-empty">Đang tải chi tiết...</p> : null}
             {!detailLoading && detail ? (
               <>
-                <header>
-                  <Link to={`/recruiter/applications?${searchParams.toString()}`}>Đóng</Link>
+                <header
+                  className="recruiter-detail-drag-handle"
+                  onMouseDown={startDetailDrag}
+                  onTouchStart={startDetailDrag}
+                >
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onTouchStart={(event) => event.stopPropagation()}
+                    onClick={closeDetail}
+                  >
+                    Đóng
+                  </button>
                   <h2>Ứng viên: {detail.candidateName}</h2>
                   <p>{applicationStatusLabels[detail.status] || detail.status}</p>
                 </header>
@@ -269,6 +405,26 @@ const RecruiterApplications = () => {
                   <p>Job: {detail.jobTitle}</p>
                   <p>Công ty: {detail.companyName}</p>
                   <p>Ngày nộp: {formatDate(detail.applicationDate)}</p>
+                </div>
+                <div className="recruiter-detail-section">
+                  <h3>AI lọc CV</h3>
+                  {detail.aiScoreAvailable ? (
+                    <>
+                      <p>Điểm phù hợp: <strong>{detail.aiScore}/100</strong></p>
+                      <p>Mức: {detail.aiLevel || "possible_match"}</p>
+                      {(detail.aiSignals || []).length > 0 ? (
+                        <ul className="recruiter-ai-signals">
+                          {detail.aiSignals.map((signal) => <li key={signal}>{signal}</li>)}
+                        </ul>
+                      ) : null}
+                      <p>Chấm lúc: {formatDate(detail.aiScoredAt)}</p>
+                    </>
+                  ) : (
+                    <p>Chưa có điểm AI cho hồ sơ này.</p>
+                  )}
+                  <button type="button" className="recruiter-secondary-action" disabled={aiScoring} onClick={scoreCurrentApplication}>
+                    {aiScoring ? "Đang chấm..." : "Chấm CV bằng AI"}
+                  </button>
                 </div>
                 <div className="recruiter-detail-actions">
                   <button type="button" disabled={!detail.hasCv} onClick={handleOpenCv}>
@@ -294,6 +450,7 @@ const RecruiterApplications = () => {
               </>
             ) : null}
           </aside>
+          </div>
         ) : null}
       </section>
     </RecruiterLayout>

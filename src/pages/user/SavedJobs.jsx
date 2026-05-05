@@ -91,8 +91,8 @@ const SavedJobs = () => {
                   className="user-job-card"
                 >
                   <div className="job-logo">
-                    {item.companyLogoUrl ? (
-                      <img src={item.companyLogoUrl} alt={item.companyName || "Logo"} />
+                    {item.imageUrl || item.companyLogoUrl ? (
+                      <img src={item.imageUrl || item.companyLogoUrl} alt={item.jobTitle || item.companyName || "Logo"} />
                     ) : (
                       <span>{(item.companyName || "C")[0]}</span>
                     )}

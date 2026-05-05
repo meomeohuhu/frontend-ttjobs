@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../../lib/api.js";
 import HomeHeader from "../../sections/HomeHeader.jsx";
@@ -19,12 +19,8 @@ const formatSalary = (job) => {
   const salary = formatNumber(job.salary);
   const currency = job.currency || "VND";
 
-  if (min && max) {
-    return `${min} - ${max} ${currency}`;
-  }
-  if (salary) {
-    return `${salary} ${currency}`;
-  }
+  if (min && max) return `${min} - ${max} ${currency}`;
+  if (salary) return `${salary} ${currency}`;
   return "Thỏa thuận";
 };
 
@@ -40,6 +36,23 @@ const MatchingJobs = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const groupedItems = useMemo(() => {
+    const groups = {
+      strong: { title: "Rất phù hợp", items: [] },
+      consider: { title: "Có thể cân nhắc", items: [] },
+      needsMore: { title: "Cần bổ sung nhu cầu", items: [] }
+    };
+    items.forEach((item) => {
+      const score = Number(item.matchScore || 0);
+      if (score >= 80) groups.strong.items.push(item);
+      else if (score >= 60) groups.consider.items.push(item);
+      else groups.needsMore.items.push(item);
+    });
+    return Object.entries(groups)
+      .map(([key, group]) => ({ key, ...group }))
+      .filter((group) => group.items.length > 0);
+  }, [items]);
 
   useEffect(() => {
     let active = true;
@@ -79,7 +92,7 @@ const MatchingJobs = () => {
           <section className="user-card">
             <h2>Việc làm phù hợp</h2>
             <p className="muted">
-              Những công việc phù hợp nhất với nhu cầu công việc hiện tại của bạn.
+              Trung tâm gợi ý dựa trên nhu cầu đã lưu: vị trí, khu vực, ngành nghề, mức lương và kỹ năng ưu tiên.
             </p>
 
             {loading && <p>Đang tải dữ liệu...</p>}
@@ -94,41 +107,40 @@ const MatchingJobs = () => {
               </div>
             )}
 
-            {!loading &&
-              !error &&
-              items.map((item) => (
-                <Link
-                  key={item.id}
-                  to={`/jobs/${item.id}`}
-                  className="user-job-card"
-                >
-                  <div className="job-logo">
-                    {item.companyLogoUrl ? (
-                      <img src={item.companyLogoUrl} alt={item.companyName || "Logo"} />
-                    ) : (
-                      <span>{(item.companyName || "C")[0]}</span>
-                    )}
-                  </div>
-                  <div>
-                    <div className="match-score-row">
-                      <span>{formatMatchScore(item)}</span>
+            {!loading && !error && groupedItems.map((group) => (
+              <div className="matching-group" key={group.key}>
+                <h3>{group.title}</h3>
+                {group.items.map((item) => (
+                  <Link key={item.id} to={`/jobs/${item.id}`} className="user-job-card">
+                    <div className="job-logo">
+                      {item.imageUrl || item.companyLogoUrl ? (
+                        <img src={item.imageUrl || item.companyLogoUrl} alt={item.title || item.companyName || "Logo"} />
+                      ) : (
+                        <span>{(item.companyName || "C")[0]}</span>
+                      )}
                     </div>
-                    <h3>{item.title}</h3>
-                    <p>{item.companyName || "Đang cập nhật"}</p>
-                    <div className="job-meta">
-                      <span>{formatSalary(item)}</span>
-                      <span>{item.location || "Toàn quốc"}</span>
-                    </div>
-                    {Array.isArray(item.matchReasons) && item.matchReasons.length > 0 ? (
-                      <div className="match-reasons">
-                        {item.matchReasons.slice(0, 3).map((reason) => (
-                          <span key={reason}>{reason}</span>
-                        ))}
+                    <div>
+                      <div className="match-score-row">
+                        <span>{formatMatchScore(item)}</span>
                       </div>
-                    ) : null}
-                  </div>
-                </Link>
-              ))}
+                      <h3>{item.title}</h3>
+                      <p>{item.companyName || "Đang cập nhật"}</p>
+                      <div className="job-meta">
+                        <span>{formatSalary(item)}</span>
+                        <span>{item.location || "Toàn quốc"}</span>
+                      </div>
+                      {Array.isArray(item.matchReasons) && item.matchReasons.length > 0 ? (
+                        <div className="match-reasons">
+                          {item.matchReasons.slice(0, 3).map((reason) => (
+                            <span key={reason}>{reason}</span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ))}
           </section>
 
           <aside className="promo-card">
