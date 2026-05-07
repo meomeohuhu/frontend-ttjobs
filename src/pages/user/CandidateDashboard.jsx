@@ -42,6 +42,8 @@ const statusLabels = {
 
 const CandidateDashboard = () => {
   const [dashboard, setDashboard] = useState(null);
+  const [followedCompanies, setFollowedCompanies] = useState([]);
+  const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -60,6 +62,22 @@ const CandidateDashboard = () => {
       }
     };
     load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const loadFollowed = async () => {
+      try {
+        const data = await apiRequest("/api/company-follows/me");
+        if (active) setFollowedCompanies(Array.isArray(data) ? data : []);
+      } catch {
+        if (active) setFollowedCompanies([]);
+      }
+    };
+    loadFollowed();
     return () => {
       active = false;
     };
@@ -100,6 +118,33 @@ const CandidateDashboard = () => {
 
         {!loading && !error && dashboard ? (
           <>
+            <section className="candidate-tabs">
+              <button type="button" className={activeTab === "overview" ? "active" : ""} onClick={() => setActiveTab("overview")}>
+                Tổng quan
+              </button>
+              <button type="button" className={activeTab === "following" ? "active" : ""} onClick={() => setActiveTab("following")}>
+                Đang theo dõi
+              </button>
+            </section>
+
+            {activeTab === "following" ? (
+              <section className="candidate-dashboard-grid">
+                <article className="candidate-panel wide-panel">
+                  <header>
+                    <h2>Công ty đang theo dõi</h2>
+                    <Link to="/jobs">Tìm thêm công ty</Link>
+                  </header>
+                  {followedCompanies.length > 0 ? followedCompanies.map((company) => (
+                    <Link key={company.id} to={`/companies/${company.id}`} className="candidate-list-card">
+                      <strong>{company.name}</strong>
+                      <span>{company.industry || "Công ty"} • {company.location || "Việt Nam"}</span>
+                      <small>{company.jobCount || 0} việc đang mở</small>
+                    </Link>
+                  )) : <p className="candidate-empty">Bạn chưa theo dõi công ty nào.</p>}
+                </article>
+              </section>
+            ) : (
+            <>
             <section className="candidate-kpi-grid">
               <Link to="/user/applied" className="candidate-kpi-card"><span>Đã ứng tuyển</span><strong>{dashboard.appliedCount || 0}</strong></Link>
               <Link to="/user/saved" className="candidate-kpi-card"><span>Việc đã lưu</span><strong>{dashboard.savedCount || 0}</strong></Link>
@@ -173,6 +218,8 @@ const CandidateDashboard = () => {
                 )}
               </article>
             </section>
+            </>
+            )}
           </>
         ) : null}
       </main>

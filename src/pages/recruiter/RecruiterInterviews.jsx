@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../lib/api.js";
 import RecruiterLayout from "./RecruiterLayout.jsx";
 import { formatDate } from "./recruiterUtils.js";
@@ -13,6 +14,7 @@ const emptyForm = {
 };
 
 const RecruiterInterviews = () => {
+  const [searchParams] = useSearchParams();
   const [interviews, setInterviews] = useState([]);
   const [applications, setApplications] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -41,6 +43,13 @@ const RecruiterInterviews = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const applicationId = searchParams.get("applicationId");
+    if (applicationId) {
+      setForm((prev) => ({ ...prev, applicationId }));
+    }
+  }, [searchParams]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -93,6 +102,16 @@ const RecruiterInterviews = () => {
     >
       {error ? <p className="recruiter-state error">{error}</p> : null}
       {message ? <p className="recruiter-state success">{message}</p> : null}
+
+      <section className="recruiter-calendar-strip">
+        {interviews.slice(0, 14).map((item) => (
+          <article key={item.id} className={`recruiter-calendar-card ${item.status || "pending"}`}>
+            <span>{new Date(item.scheduledAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}</span>
+            <strong>{new Date(item.scheduledAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</strong>
+            <small>{item.candidateName || "Ứng viên"}</small>
+          </article>
+        ))}
+      </section>
 
       <section className="recruiter-two-column recruiter-two-column-wide">
         <div className="recruiter-panel">

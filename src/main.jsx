@@ -9,6 +9,8 @@ import JobDetail from "./pages/JobDetail.jsx";
 import JobsList from "./pages/JobsList.jsx";
 import CompanyDetail from "./pages/CompanyDetail.jsx";
 import CareerGuide from "./pages/CareerGuide.jsx";
+import CareerRoadmap from "./pages/CareerRoadmap.jsx";
+import Community from "./pages/Community.jsx";
 import Tools from "./pages/Tools.jsx";
 import GrossNet from "./pages/tools/GrossNet.jsx";
 import PersonalIncomeTax from "./pages/tools/PersonalIncomeTax.jsx";
@@ -71,6 +73,9 @@ root.render(
         <Route path="/tools/interview-questions" element={<InterviewQuestions />} />
         <Route path="/tools/salary-lookup" element={<SalaryLookup />} />
         <Route path="/career-guide" element={<CareerGuide />} />
+        <Route path="/career-roadmap" element={<CareerRoadmap />} />
+        <Route path="/api/ai/career-roadmap" element={<Navigate to="/career-roadmap" replace />} />
+        <Route path="/community" element={<Community />} />
         <Route path="/career-guide/:slug" element={<CareerGuide />} />
         <Route path="/companies/:id" element={<CompanyDetail />} />
         <Route

@@ -14189,3 +14189,256 @@ button.recruiter-table-row {
     grid-template-columns: 1fr;
   }
 }
+.roadmap-page,
+.community-page {
+  width: min(1180px, calc(100% - 32px));
+  margin: 32px auto 72px;
+}
+
+.roadmap-intro,
+.community-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: 28px;
+  align-items: stretch;
+  padding: 32px;
+  border: 1px solid #d8e3df;
+  background: #f6fbf8;
+  border-radius: 8px;
+}
+
+.roadmap-intro h1,
+.community-hero h1 {
+  margin: 8px 0 12px;
+  font-size: clamp(2rem, 4vw, 4rem);
+  line-height: 1.02;
+}
+
+.roadmap-form,
+.community-form,
+.company-review-form {
+  display: grid;
+  gap: 12px;
+}
+
+.roadmap-form label,
+.company-review-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.roadmap-form input,
+.roadmap-form button,
+.community-form input,
+.community-form select,
+.community-form textarea,
+.community-form button,
+.company-review-form input,
+.company-review-form select,
+.company-review-form textarea,
+.company-review-form button {
+  width: 100%;
+  border: 1px solid #cbd5d1;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.roadmap-form button,
+.community-form button,
+.company-review-form button {
+  border: 0;
+  color: #fff;
+  background: #0f766e;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.roadmap-result {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 32px;
+  margin-top: 28px;
+}
+
+.roadmap-summary,
+.roadmap-node,
+.community-thread-card,
+.company-review-card {
+  border: 1px solid #d8e3df;
+  border-radius: 8px;
+  background: #fff;
+  padding: 20px;
+}
+
+.roadmap-timeline {
+  position: relative;
+  display: grid;
+  gap: 18px;
+}
+
+.roadmap-node {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 16px;
+}
+
+.roadmap-dot {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 900;
+}
+
+.roadmap-error {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.candidate-tabs {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.candidate-tabs button {
+  border: 1px solid #d8e3df;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.candidate-tabs button.active {
+  background: #0f766e;
+  color: #fff;
+}
+
+.wide-panel {
+  grid-column: 1 / -1;
+}
+
+.recruiter-kanban-column.is-over {
+  outline: 2px solid #0f766e;
+  outline-offset: -2px;
+}
+
+.recruiter-application-card.dragging {
+  opacity: 0.75;
+  box-shadow: 0 18px 40px rgba(15, 118, 110, 0.22);
+}
+
+.recruiter-skill-chart {
+  height: 180px;
+  margin: 12px 0;
+}
+
+.recruiter-ai-explain {
+  margin: 10px 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #ecfdf5;
+}
+
+.recruiter-ai-explain.warning {
+  background: #fff7ed;
+}
+
+.recruiter-calendar-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.recruiter-calendar-card {
+  border: 1px solid #d8e3df;
+  border-radius: 8px;
+  padding: 14px;
+  background: #fff;
+}
+
+.company-review-insight {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.company-review-insight div {
+  padding: 16px;
+  border-radius: 8px;
+  background: #f6fbf8;
+}
+
+.company-review-list,
+.community-thread-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.company-review-check {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 8px;
+}
+
+.company-review-check input {
+  width: auto;
+}
+
+.guide-comments {
+  margin-top: 32px;
+  display: grid;
+  gap: 14px;
+}
+
+.guide-comments form {
+  display: grid;
+  gap: 10px;
+}
+
+.guide-comments textarea {
+  min-height: 96px;
+  border: 1px solid #d8e3df;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.guide-comments button {
+  justify-self: start;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 800;
+}
+
+.guide-comments article {
+  border-top: 1px solid #d8e3df;
+  padding-top: 12px;
+}
+
+.community-layout {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+}
+
+@media (max-width: 820px) {
+  .roadmap-intro,
+  .community-hero,
+  .roadmap-result,
+  .community-layout {
+    grid-template-columns: 1fr;
+  }
+}

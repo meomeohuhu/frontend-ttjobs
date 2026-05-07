@@ -77,6 +77,9 @@ const CompanyDetail = () => {
   const [followError, setFollowError] = useState("");
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
+  const [reviewSummary, setReviewSummary] = useState(null);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, pros: "", cons: "", salary: "", anonymous: true });
+  const [reviewMessage, setReviewMessage] = useState("");
   const [jobKeyword, setJobKeyword] = useState("");
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [provinceQuery, setProvinceQuery] = useState("");
@@ -196,6 +199,23 @@ const CompanyDetail = () => {
       active = false;
     };
   }, [company?.id]);
+
+  useEffect(() => {
+    let active = true;
+    const loadReviews = async () => {
+      if (!company?.id) return;
+      try {
+        const data = await apiRequest(`/api/companies/${company.id}/reviews`, { skipAuth: true });
+        if (active) setReviewSummary(data || null);
+      } catch {
+        if (active) setReviewSummary(null);
+      }
+    };
+    loadReviews();
+    return () => {
+      active = false;
+    };
+  }, [company?.id, reviewMessage]);
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -321,6 +341,26 @@ const CompanyDetail = () => {
       setFollowLoading(false);
     }
   }, [company?.id, followLoading, isFollowing]);
+
+  const submitReview = useCallback(async (event) => {
+    event.preventDefault();
+    if (!company?.id) return;
+    setReviewMessage("");
+    try {
+      await apiRequest(`/api/companies/${company.id}/reviews`, {
+        method: "POST",
+        body: JSON.stringify({
+          ...reviewForm,
+          rating: Number(reviewForm.rating),
+          salary: reviewForm.salary ? Number(reviewForm.salary) : null
+        })
+      });
+      setReviewForm({ rating: 5, pros: "", cons: "", salary: "", anonymous: true });
+      setReviewMessage("Đã gửi đánh giá công ty.");
+    } catch (err) {
+      setReviewMessage(err.message || "Không thể gửi đánh giá.");
+    }
+  }, [company?.id, reviewForm]);
 
   return (
     <div className="company-detail-shell">
@@ -542,6 +582,40 @@ const CompanyDetail = () => {
                         </Link>
                       ))
                     )}
+                  </div>
+                </article>
+
+                <article className="company-panel" id="company-reviews">
+                  <header className="company-panel-header company-panel-header-row">
+                    <h2>Đánh giá</h2>
+                    <span className="company-count-badge">{formatNumber(reviewSummary?.reviewCount || 0)} đánh giá</span>
+                  </header>
+                  <div className="company-review-insight">
+                    <div><strong>{Number(reviewSummary?.averageRating || 0).toFixed(1)}/5</strong><span>Điểm trung bình</span></div>
+                    <div><strong>{formatNumber(reviewSummary?.averageSalary || 0)} VND</strong><span>Lương trung bình</span></div>
+                  </div>
+                  <form className="company-review-form" onSubmit={submitReview}>
+                    <select value={reviewForm.rating} onChange={(event) => setReviewForm((prev) => ({ ...prev, rating: event.target.value }))}>
+                      {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} sao</option>)}
+                    </select>
+                    <input value={reviewForm.salary} onChange={(event) => setReviewForm((prev) => ({ ...prev, salary: event.target.value }))} placeholder="Mức lương tham khảo" />
+                    <textarea value={reviewForm.pros} onChange={(event) => setReviewForm((prev) => ({ ...prev, pros: event.target.value }))} placeholder="Điểm tốt" />
+                    <textarea value={reviewForm.cons} onChange={(event) => setReviewForm((prev) => ({ ...prev, cons: event.target.value }))} placeholder="Điểm cần cải thiện" />
+                    <label className="company-review-check">
+                      <input type="checkbox" checked={reviewForm.anonymous} onChange={(event) => setReviewForm((prev) => ({ ...prev, anonymous: event.target.checked }))} />
+                      Ẩn danh
+                    </label>
+                    <button type="submit">Gửi đánh giá</button>
+                  </form>
+                  {reviewMessage ? <p className="company-search-error">{reviewMessage}</p> : null}
+                  <div className="company-review-list">
+                    {(reviewSummary?.reviews || []).map((review) => (
+                      <div key={review.id} className="company-review-card">
+                        <strong>{review.rating}/5 • {review.reviewerName || "Ẩn danh"}</strong>
+                        {review.pros ? <p><b>Pros:</b> {review.pros}</p> : null}
+                        {review.cons ? <p><b>Cons:</b> {review.cons}</p> : null}
+                      </div>
+                    ))}
                   </div>
                 </article>
               </div>

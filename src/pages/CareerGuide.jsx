@@ -62,12 +62,33 @@ const CareerGuide = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState("");
   const [detailError, setDetailError] = useState("");
+  const [commentText, setCommentText] = useState("");
+  const [comments, setComments] = useState([]);
 
   const isReading = !!slug;
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [slug]);
+
+  useEffect(() => {
+    if (!slug) {
+      setComments([]);
+      return;
+    }
+    const raw = localStorage.getItem(`ttjobs_guide_comments_${slug}`);
+    setComments(raw ? JSON.parse(raw) : []);
+  }, [slug]);
+
+  const submitComment = (event) => {
+    event.preventDefault();
+    const text = commentText.trim();
+    if (!text || !slug) return;
+    const next = [{ id: Date.now(), text, createdAt: new Date().toISOString() }, ...comments];
+    setComments(next);
+    localStorage.setItem(`ttjobs_guide_comments_${slug}`, JSON.stringify(next));
+    setCommentText("");
+  };
 
   useEffect(() => {
     let active = true;
@@ -275,6 +296,22 @@ const CareerGuide = () => {
                     <Link to="/career-guide">Quay lại cẩm nang</Link>
                   </div>
                 )}
+
+                {isReading ? (
+                  <section className="guide-comments">
+                    <h3>Bình luận</h3>
+                    <form onSubmit={submitComment}>
+                      <textarea value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder="Chia sẻ câu hỏi hoặc kinh nghiệm của bạn" />
+                      <button type="submit">Gửi bình luận</button>
+                    </form>
+                    {comments.map((comment) => (
+                      <article key={comment.id}>
+                        <p>{comment.text}</p>
+                        <span>{new Date(comment.createdAt).toLocaleString("vi-VN")}</span>
+                      </article>
+                    ))}
+                  </section>
+                ) : null}
               </div>
             ) : (
               <div className="career-grid-section">
