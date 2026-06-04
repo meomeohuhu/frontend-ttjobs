@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiRequest } from "../lib/api.js";
+import { apiRequest, clearAuthToken } from "../lib/api.js";
 
 const TOKEN_KEY = "ttjobs_token";
 
@@ -22,9 +22,15 @@ export function useSavedJobs() {
     setLoading(true);
     setError("");
     try {
+      await apiRequest("/api/users/me");
       const data = await apiRequest("/api/saved-jobs");
       setSavedJobs(Array.isArray(data) ? data : []);
     } catch (err) {
+      if (err?.status === 401) {
+        clearAuthToken();
+        setSavedJobs([]);
+        return;
+      }
       setError(err.message || "Không thể tải việc đã lưu");
     } finally {
       setLoading(false);

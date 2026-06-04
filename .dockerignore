@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+dist
+
+# Source control
+.git
+.gitignore
+.gitattributes
+
+# Screenshots and test artifacts
+.chrome-ui-*
+ui-*.png
+vite-*.log
+*.log
+*.err
+
+# IDE and editor files
+.vscode
+.idea
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+.Thumbs.db
+
+# Build and cache
+.cache/
+*.bak
+dist/
+build/
+
+# Documentation
+*.md
+README*
+CONTRIBUTING*

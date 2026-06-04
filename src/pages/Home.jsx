@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiRequest } from "../lib/api.js";
+import { apiRequest, hasAuthToken } from "../lib/api.js";
 import HomeHeader from "../sections/HomeHeader.jsx";
 import AnnouncementBar from "../sections/AnnouncementBar.jsx";
 import HeroSearch from "../sections/HeroSearch.jsx";
@@ -29,7 +29,14 @@ const Home = () => {
   const [latestError, setLatestError] = useState("");
   const [personalizedError, setPersonalizedError] = useState("");
   const { savedIdSet, savingIds, toggleSavedJob } = useSavedJobs();
-  const isLoggedIn = Boolean(localStorage.getItem("ttjobs_token"));
+  const [authVersion, setAuthVersion] = useState(0);
+  const isLoggedIn = hasAuthToken();
+
+  useEffect(() => {
+    const handleAuthChanged = () => setAuthVersion((value) => value + 1);
+    window.addEventListener("ttjobs:auth-changed", handleAuthChanged);
+    return () => window.removeEventListener("ttjobs:auth-changed", handleAuthChanged);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -104,6 +111,7 @@ const Home = () => {
       setPersonalizedLoading(true);
       setPersonalizedError("");
       try {
+        await apiRequest("/api/users/me");
         const [preferenceData, jobsData] = await Promise.all([
           apiRequest("/api/job-needs/preferences"),
           apiRequest("/api/recommendations/job-needs")
@@ -129,7 +137,7 @@ const Home = () => {
     return () => {
       active = false;
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, authVersion]);
 
   const handleToggleSave = async (jobId) => {
     try {

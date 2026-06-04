@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { apiRequest } from "../lib/api.js";
+import { apiRequest, clearAuthToken, hasAuthToken } from "../lib/api.js";
 import ToolGlyph from "../tools/components/ToolGlyph.jsx";
 import { toolsByGroup } from "../tools/toolsCatalog.js";
 
@@ -83,7 +83,7 @@ const navItems = [
   { label: "Hồ sơ", to: "/create-cv", icon: "cv" },
   { label: "Công cụ", to: "/tools", icon: "tools", mega: true },
   { label: "Cẩm nang", to: "/career-guide", icon: "guide" },
-  { label: "TTJobs", to: "#", icon: "sparkle" }
+  { label: "TTJobSocial", to: "/community", icon: "sparkle" }
 ];
 
 const toolsMegaMenu = toolsByGroup.map((group) => ({
@@ -104,7 +104,7 @@ const menuSections = [
       { label: "Việc làm đã lưu", to: "/user/saved" },
       { label: "Việc làm đã ứng tuyển", to: "/user/applied" },
       { label: "Việc làm phù hợp với bạn", to: "/user/matching" },
-      { label: "Cài đặt gợi ý việc làm", actionLabel: "Cài đặt gợi ý việc làm" }
+      { label: "Cài đặt gợi ý việc làm", to: "/user/job-needs" }
     ]
   },
   {
@@ -154,9 +154,16 @@ const HomeHeader = () => {
   const [profile, setProfile] = useState(null);
   const [recruiterUnreadCount, setRecruiterUnreadCount] = useState(0);
   const [messageUnreadCount, setMessageUnreadCount] = useState(0);
+  const [headerNotice, setHeaderNotice] = useState("");
+  const [authVersion, setAuthVersion] = useState(0);
 
-  const token = localStorage.getItem("ttjobs_token");
-  const isLoggedIn = Boolean(token);
+  const isLoggedIn = hasAuthToken();
+
+  useEffect(() => {
+    const handleAuthChanged = () => setAuthVersion((value) => value + 1);
+    window.addEventListener("ttjobs:auth-changed", handleAuthChanged);
+    return () => window.removeEventListener("ttjobs:auth-changed", handleAuthChanged);
+  }, []);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -176,8 +183,8 @@ const HomeHeader = () => {
           setProfile(data || null);
         }
       } catch (error) {
-        if ((error?.message || "").toLowerCase().includes("unauthorized")) {
-          localStorage.removeItem("ttjobs_token");
+        if (error?.status === 401) {
+          clearAuthToken();
         }
         if (active) {
           setProfile(null);
@@ -223,10 +230,11 @@ const HomeHeader = () => {
   const accountId = profile?.id ? `ID ${profile.id}` : "ID --";
   const avatarLabel = (accountName || "U").trim().charAt(0).toUpperCase();
   const role = String(profile?.role || "").toUpperCase();
-  const isRecruiterRole = role === "RECRUITER" || role === "ADMIN";
+  const isAdminRole = role === "ADMIN";
+  const isRecruiterRole = role === "RECRUITER";
 
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || !profile?.id) {
       setRecruiterUnreadCount(0);
       setMessageUnreadCount(0);
       return;
@@ -274,7 +282,7 @@ const HomeHeader = () => {
       active = false;
       window.removeEventListener("ttjobs:messages-changed", handleMessagesChanged);
     };
-  }, [isLoggedIn, isRecruiterRole]);
+  }, [isLoggedIn, isRecruiterRole, profile?.id, authVersion]);
 
   const activeNavLabel = useMemo(() => {
     const path = location.pathname || "/";
@@ -294,15 +302,14 @@ const HomeHeader = () => {
   }, [location.pathname]);
 
   const handleLogout = () => {
-    localStorage.removeItem("ttjobs_token");
+    clearAuthToken();
     setProfile(null);
     setIsMenuOpen(false);
     navigate("/login", { replace: true });
   };
 
   const openPlaceholder = (label) => {
-    setIsMenuOpen(false);
-    window.alert(`${label} đang được cập nhật`);
+    setHeaderNotice(`${label} đang được cập nhật`);
   };
 
   const toggleSection = (title) => {
@@ -385,7 +392,7 @@ const HomeHeader = () => {
         {isLoggedIn ? (
           <>
             <div className="icon-group">
-              {!isRecruiterRole ? (
+              {!isRecruiterRole && !isAdminRole ? (
                 <Link className="icon-btn user-quick-icon" to="/messages" aria-label="Tin nhắn">
                   <HeaderIcon name="chat" className="header-action-icon" />
                   {messageUnreadCount > 0 ? <span className="icon-badge">{messageUnreadCount}</span> : null}
@@ -440,6 +447,7 @@ const HomeHeader = () => {
                     </div>
 
                     <div className="account-scroll">
+                      {headerNotice ? <div className="account-inline-notice">{headerNotice}</div> : null}
                       {menuSections.map((section) => (
                         <div className="account-section" key={section.title}>
                           <button
@@ -490,9 +498,17 @@ const HomeHeader = () => {
             </div>
 
             <div className="recruiter-link">
-              {isRecruiterRole ? (
+              {isAdminRole ? (
                 <>
-                  <span>Workspace tuyển dụng</span>
+                  <span>Không gian quản trị</span>
+                  <Link to="/admin/dashboard">
+                    <HeaderIcon name="dashboard" className="recruiter-link-icon" />
+                    <span>Mở dashboard</span>
+                  </Link>
+                </>
+              ) : isRecruiterRole ? (
+                <>
+                  <span>Không gian tuyển dụng</span>
                   <Link to="/recruiter/dashboard">
                     <HeaderIcon name="dashboard" className="recruiter-link-icon" />
                     <span>Mở dashboard</span>
@@ -500,7 +516,7 @@ const HomeHeader = () => {
                 </>
               ) : (
                 <>
-                  <span>Workspace ứng viên</span>
+                  <span>Không gian ứng viên</span>
                   <Link to="/user/dashboard">
                     <HeaderIcon name="dashboard" className="recruiter-link-icon" />
                     <span>Mở dashboard</span>

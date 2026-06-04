@@ -167,14 +167,18 @@ const AppliedJobs = () => {
                     <div className="user-job-actions">
                       <Link to={`/jobs/${item.jobId}`} className="outline-btn small">Xem tin</Link>
                       <Link to="/messages" className="outline-btn small">Tin nhắn</Link>
-                      <button
-                        type="button"
-                        className="danger-outline-btn"
-                        disabled={!canWithdraw || isWithdrawing}
-                        onClick={() => withdrawApplication(item)}
-                      >
-                        {status === "withdrawn" ? "Đã hủy" : isWithdrawing ? "Đang hủy..." : "Hủy ứng tuyển"}
-                      </button>
+                      {status === "withdrawn" ? (
+                        <Link to={`/jobs/${item.jobId}`} className="outline-btn small primary">Ứng tuyển lại</Link>
+                      ) : (
+                        <button
+                          type="button"
+                          className="danger-outline-btn"
+                          disabled={!canWithdraw || isWithdrawing}
+                          onClick={() => withdrawApplication(item)}
+                        >
+                          {isWithdrawing ? "Đang hủy..." : "Hủy ứng tuyển"}
+                        </button>
+                      )}
                     </div>
                   </article>
                 );

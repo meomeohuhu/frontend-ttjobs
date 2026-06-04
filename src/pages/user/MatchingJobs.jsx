@@ -82,6 +82,26 @@ const MatchingJobs = () => {
     };
   }, []);
 
+  const recordRecommendationEvent = async (jobId, eventType) => {
+    if (!jobId) return;
+    try {
+      await apiRequest(`/api/recommendations/jobs/${jobId}/event?eventType=${encodeURIComponent(eventType)}`, {
+        method: "POST"
+      });
+    } catch {
+      // Interaction logging must not block the candidate flow.
+    }
+  };
+
+  const handleJobClick = (jobId) => {
+    recordRecommendationEvent(jobId, "recommendation_clicked");
+  };
+
+  const handleIgnoreJob = (jobId) => {
+    setItems((current) => current.filter((item) => item.id !== jobId));
+    recordRecommendationEvent(jobId, "candidate_ignored");
+  };
+
   return (
     <div className="user-page-shell">
       <HomeHeader />
@@ -111,7 +131,8 @@ const MatchingJobs = () => {
               <div className="matching-group" key={group.key}>
                 <h3>{group.title}</h3>
                 {group.items.map((item) => (
-                  <Link key={item.id} to={`/jobs/${item.id}`} className="user-job-card">
+                  <div key={item.id} className="matching-card-wrap">
+                    <Link to={`/jobs/${item.id}`} className="user-job-card" onClick={() => handleJobClick(item.id)}>
                     <div className="job-logo">
                       {item.imageUrl || item.companyLogoUrl ? (
                         <img src={item.imageUrl || item.companyLogoUrl} alt={item.title || item.companyName || "Logo"} />
@@ -137,7 +158,11 @@ const MatchingJobs = () => {
                         </div>
                       ) : null}
                     </div>
-                  </Link>
+                    </Link>
+                    <button type="button" className="outline-btn small matching-ignore-btn" onClick={() => handleIgnoreJob(item.id)}>
+                    Bỏ qua
+                  </button>
+                  </div>
                 ))}
               </div>
             ))}

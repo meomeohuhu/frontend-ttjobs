@@ -86,12 +86,13 @@ const JobDetail = () => {
       setLoading(true);
       setError("");
       try {
-        const data = await apiRequest(`/api/jobs/${id}`);
+        const data = await apiRequest(`/api/jobs/${id}`, { skipAuth: true });
         if (!active) return;
         setJob(data);
         if (data?.jobType) {
           const related = await apiRequest(
-            `/api/jobs/search?jobType=${encodeURIComponent(data.jobType)}`
+            `/api/jobs/search?jobType=${encodeURIComponent(data.jobType)}`,
+            { skipAuth: true }
           );
           if (active) {
             const filtered = Array.isArray(related)
@@ -125,7 +126,10 @@ const JobDetail = () => {
   }, [job]);
 
   const alreadyApplied = useMemo(() => {
-    return myApplications.some((application) => String(application.jobId) === String(job?.id));
+    return myApplications.some((application) => (
+      String(application.jobId) === String(job?.id)
+      && String(application.status || "").toLowerCase() !== "withdrawn"
+    ));
   }, [myApplications, job?.id]);
 
   const handleToggleSave = async () => {
@@ -450,7 +454,7 @@ const JobDetail = () => {
             <div className="related-section">
               <div className="related-header">
                 <h2>Việc làm liên quan</h2>
-                <span>Cùng loại công việc: {job.jobType || "Khác"}</span>
+                <span className="label-value-line"><span>Cùng loại công việc:</span><span>{job.jobType || "Khác"}</span></span>
               </div>
               <div className="related-list">
                 {relatedJobs.length === 0 && <p>Chưa có việc làm liên quan.</p>}

@@ -17,9 +17,10 @@ const Login = () => {
     setStatus({ loading: true, error: "", success: "" });
     try {
       const data = await apiRequest("/api/auth/login", {
+        skipAuth: true,
         method: "POST",
         body: JSON.stringify({
-          email: form.email,
+          email: form.email.trim(),
           password: form.password
         })
       });
@@ -89,6 +90,7 @@ const Login = () => {
                   placeholder="name@email.com"
                   type="email"
                   name="email"
+                  autoComplete="email"
                   value={form.email}
                   onChange={handleChange}
                   required
@@ -115,6 +117,7 @@ const Login = () => {
                   placeholder="••••••••"
                   type="password"
                   name="password"
+                  autoComplete="current-password"
                   value={form.password}
                   onChange={handleChange}
                   required

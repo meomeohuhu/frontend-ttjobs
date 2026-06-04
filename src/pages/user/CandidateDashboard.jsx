@@ -91,7 +91,8 @@ const CandidateDashboard = () => {
     { label: "Việc đã ứng tuyển", to: "/user/applied" },
     { label: "Tin nhắn", to: "/messages" },
     { label: "Lịch phỏng vấn", to: "/user/interviews" },
-    { label: "Gợi ý việc làm", to: "/user/matching" }
+    { label: "Gợi ý việc làm", to: "/user/matching" },
+    { label: "Tìm kiếm đã lưu", to: "/user/saved-searches" }
   ]), []);
 
   return (

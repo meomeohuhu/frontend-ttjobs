@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { ENABLE_DEMO_FALLBACK } from "../lib/demoFallback.js";
 
 const PAGE_SIZE = 4;
 
@@ -95,8 +96,8 @@ const HighlightJobsSection = ({
 }) => {
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const displayJobs = error && jobs.length === 0 ? fallbackHighlightJobs : jobs;
-  const isDemoMode = error && jobs.length === 0;
+  const displayJobs = error && jobs.length === 0 && ENABLE_DEMO_FALLBACK ? fallbackHighlightJobs : jobs;
+  const isDemoMode = error && jobs.length === 0 && ENABLE_DEMO_FALLBACK;
 
   const pageCount = Math.max(1, Math.ceil(displayJobs.length / PAGE_SIZE));
   const visibleJobs = useMemo(() => {
@@ -219,10 +220,20 @@ const HighlightJobsSection = ({
           </div>
           <div className="featured-promo-side">
             <div className="banner-roles">
-              <p>Backend Developer</p>
-              <p>Business Development</p>
-              <p>HR Executive</p>
-              <p>Operations Specialist</p>
+              {displayJobs && displayJobs.length > 0 ? (
+                displayJobs.slice(0, 4).map((job, idx) => (
+                  <p key={job.id || idx} title={job.title}>
+                    {job.title}
+                  </p>
+                ))
+              ) : (
+                <>
+                  <p>Backend Developer</p>
+                  <p>Business Development</p>
+                  <p>HR Executive</p>
+                  <p>Operations Specialist</p>
+                </>
+              )}
             </div>
             <button type="button" onClick={toggleExpanded}>
               {expanded ? "Thu gọn" : "Xem thêm"}

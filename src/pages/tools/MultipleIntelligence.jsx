@@ -39,7 +39,7 @@ const MultipleIntelligence = () => {
             </div>
           ))}
         </div>
-        <span>Gợi ý hướng nghề: {scores.slice(0, 3).map((item) => item.career).join("; ")}.</span>
+        <span className="label-value-line"><span>Gợi ý hướng nghề:</span><span>{scores.slice(0, 3).map((item) => item.career).join("; ")}.</span></span>
       </section>
     </ToolPageShell>
   );

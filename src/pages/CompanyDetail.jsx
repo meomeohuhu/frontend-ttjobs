@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { apiRequest } from "../lib/api.js";
+import { apiRequest, hasAuthToken } from "../lib/api.js";
 import HomeHeader from "../sections/HomeHeader.jsx";
 import FloatingActions from "../sections/FloatingActions.jsx";
 import Footer from "../sections/Footer.jsx";
@@ -175,7 +175,8 @@ const CompanyDetail = () => {
     let active = true;
 
     const loadFollowStatus = async () => {
-      if (!company?.id) {
+      if (!company?.id || !hasAuthToken()) {
+        setIsFollowing(false);
         return;
       }
 

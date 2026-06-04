@@ -94,16 +94,16 @@ const RecruiterCandidateSearch = () => {
             return (
               <div key={candidate.candidateId} className="recruiter-table-row recruiter-table-row-4">
                 <div>
-                  <strong>{text.candidate}: {displayName}</strong>
+                  <strong className="label-value-line"><span>{text.candidate}:</span><span>{displayName}</span></strong>
                   {shouldShowEmail ? <span>{candidate.candidateEmail}</span> : null}
                 </div>
                 <div>
-                  <strong>{text.exp}: {candidate.experienceYears ?? 0} {text.years}</strong>
-                  <span>{text.latestJob}: {candidate.latestJobTitle || text.noJob}</span>
+                  <strong className="label-value-line"><span>{text.exp}:</span><span>{candidate.experienceYears ?? 0} {text.years}</span></strong>
+                  <span className="label-value-line"><span>{text.latestJob}:</span><span>{candidate.latestJobTitle || text.noJob}</span></span>
                 </div>
                 <div>
-                  <strong>{text.applications}: {candidate.applicationCount || 0}</strong>
-                  <span>{text.status}: {applicationStatusLabels[candidate.latestStatus] || candidate.latestStatus || applicationStatusLabels.submitted}</span>
+                  <strong className="label-value-line"><span>{text.applications}:</span><span>{candidate.applicationCount || 0}</span></strong>
+                  <span className="label-value-line"><span>{text.status}:</span><span>{applicationStatusLabels[candidate.latestStatus] || candidate.latestStatus || applicationStatusLabels.submitted}</span></span>
                 </div>
                 <Link className="recruiter-secondary-action" to={`/recruiter/applications?keyword=${encodeURIComponent(candidate.candidateEmail || candidate.candidateName || "")}`}>
                   {text.viewProfile}

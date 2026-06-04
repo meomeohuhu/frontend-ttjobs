@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ENABLE_DEMO_FALLBACK } from "../lib/demoFallback.js";
 
 const fallbackLatestJobs = [
   {
@@ -119,9 +120,9 @@ const HomeJobCard = ({ job, savedIdSet, savingIds, onToggleSave, showMatch }) =>
 };
 
 export const LatestJobsSection = ({ jobs = [], loading, error, savedIdSet, savingIds, onToggleSave }) => {
-  const displayJobs = error && jobs.length === 0 ? fallbackLatestJobs : jobs;
+  const displayJobs = error && jobs.length === 0 && ENABLE_DEMO_FALLBACK ? fallbackLatestJobs : jobs;
   const visibleJobs = displayJobs.slice(0, 6);
-  const isDemoMode = error && jobs.length === 0;
+  const isDemoMode = error && jobs.length === 0 && ENABLE_DEMO_FALLBACK;
 
   return (
     <section className="latest-jobs-section home-job-section">

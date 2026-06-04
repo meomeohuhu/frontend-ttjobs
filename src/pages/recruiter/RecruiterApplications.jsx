@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -78,7 +78,7 @@ const RecruiterApplications = () => {
       });
       setApplications(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message || "KhÃ´ng thá»ƒ táº£i á»©ng viÃªn");
+      setError(err.message || "Không thể tải ứng viên");
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ const RecruiterApplications = () => {
       const data = await apiRequest(`/api/recruiter/applications/${applicationId}`);
       setDetail(data || null);
     } catch (err) {
-      setError(err.message || "KhÃ´ng thá»ƒ táº£i chi tiáº¿t á»©ng viÃªn");
+      setError(err.message || "Không thể tải chi tiết ứng viên");
     } finally {
       setDetailLoading(false);
     }
@@ -174,11 +174,11 @@ const RecruiterApplications = () => {
       await apiRequest(`/api/applications/${applicationId}/status?status=${encodeURIComponent(status)}`, {
         method: "PUT"
       });
-      setMessage("ÄÃ£ cáº­p nháº­t tráº¡ng thÃ¡i á»©ng viÃªn.");
+      setMessage("Đã cập nhật trạng thái ứng viên.");
       await loadApplications();
       await loadDetail(applicationId);
     } catch (err) {
-      setError(err.message || "KhÃ´ng thá»ƒ cáº­p nháº­t tráº¡ng thÃ¡i");
+      setError(err.message || "Không thể cập nhật trạng thái");
     }
   };
 
@@ -202,11 +202,11 @@ const RecruiterApplications = () => {
         body: JSON.stringify({ applicationIds: selectedIds, status: bulkStatus })
       });
       setSelectedIds([]);
-      setMessage("ÄÃ£ cáº­p nháº­t tráº¡ng thÃ¡i hÃ ng loáº¡t.");
+      setMessage("Đã cập nhật trạng thái hàng loạt.");
       await loadApplications();
       if (id) await loadDetail(id);
     } catch (err) {
-      setError(err.message || "KhÃ´ng thá»ƒ cáº­p nháº­t hÃ ng loáº¡t");
+      setError(err.message || "Không thể cập nhật hàng loạt");
     }
   };
 
@@ -231,10 +231,10 @@ const RecruiterApplications = () => {
       });
       setAiMode(true);
       setApplications(Array.isArray(data) ? data : []);
-      setMessage("AI Ä‘Ã£ cháº¥m vÃ  lá»c CV theo mÃ´ táº£ cÃ´ng viá»‡c.");
+      setMessage("AI đã chấm và lọc CV theo mô tả công việc.");
       if (id) await loadDetail(id);
     } catch (err) {
-      setError(err.message || "KhÃ´ng thá»ƒ cháº¥m CV báº±ng AI");
+      setError(err.message || "Không thể chấm CV bằng AI");
     } finally {
       setAiScoring(false);
     }
@@ -250,10 +250,10 @@ const RecruiterApplications = () => {
         method: "POST"
       });
       setDetail(data || null);
-      setMessage("AI Ä‘Ã£ cháº¥m láº¡i CV nÃ y.");
+      setMessage("AI đã chấm lại CV này.");
       await loadApplications();
     } catch (err) {
-      setError(err.message || "KhÃ´ng thá»ƒ cháº¥m CV nÃ y báº±ng AI");
+      setError(err.message || "Không thể chấm CV này bằng AI");
     } finally {
       setAiScoring(false);
     }
@@ -265,42 +265,42 @@ const RecruiterApplications = () => {
     try {
       await openCvBlob(detail.id);
     } catch (err) {
-      setError(err.message || "KhÃ´ng thá»ƒ má»Ÿ CV");
+      setError(err.message || "Không thể mở CV");
     }
   };
 
   const filteredJobs = jobs.filter((job) => !filters.companyId || String(job.companyId) === String(filters.companyId));
   const nextStatuses = detail ? nextApplicationStatuses[detail.status] || [] : [];
   const skillChartData = detail?.aiScoreAvailable ? [
-    { name: "PhÃ¹ há»£p", value: detail.aiScore || 0 },
-    { name: "Äiá»ƒm máº¡nh", value: Math.min(100, (detail.aiPros || []).length * 20) },
-    { name: "Cáº§n bÃ¹", value: Math.min(100, (detail.aiCons || []).length * 20) }
+    { name: "Phù hợp", value: detail.aiScore || 0 },
+    { name: "Điểm mạnh", value: Math.min(100, (detail.aiPros || []).length * 20) },
+    { name: "Cần bù", value: Math.min(100, (detail.aiCons || []).length * 20) }
   ] : [];
 
   return (
     <RecruiterLayout
-      title="á»¨ng viÃªn"
-      description="Theo dÃµi há»“ sÆ¡ theo tráº¡ng thÃ¡i, xem CV vÃ  cáº­p nháº­t tiáº¿n trÃ¬nh tuyá»ƒn dá»¥ng."
-      actions={<Link to="/recruiter/jobs" className="recruiter-primary-action">Táº¡o job</Link>}
+      title="Ứng viên"
+      description="Theo dõi hồ sơ theo trạng thái, xem CV và cập nhật tiến trình tuyển dụng."
+      actions={<Link to="/recruiter/jobs" className="recruiter-primary-action">Tạo job</Link>}
     >
       {error ? <p className="recruiter-state error">{error}</p> : null}
       {message ? <p className="recruiter-state success">{message}</p> : null}
 
       <section className="recruiter-filters">
         <select name="companyId" value={filters.companyId} onChange={handleFilter}>
-          <option value="">Táº¥t cáº£ cÃ´ng ty</option>
+          <option value="">Tất cả công ty</option>
           {companies.map((company) => (
             <option key={company.id} value={company.id}>{company.name}</option>
           ))}
         </select>
         <select name="jobId" value={filters.jobId} onChange={handleFilter}>
-          <option value="">Táº¥t cáº£ job</option>
+          <option value="">Tất cả job</option>
           {filteredJobs.map((job) => (
             <option key={job.id} value={job.id}>{job.title}</option>
           ))}
         </select>
         <select name="status" value={filters.status} onChange={handleFilter}>
-          <option value="">Táº¥t cáº£ tráº¡ng thÃ¡i</option>
+          <option value="">Tất cả trạng thái</option>
           {applicationStatuses.map((status) => (
             <option key={status} value={status}>{applicationStatusLabels[status] || status}</option>
           ))}
@@ -309,32 +309,32 @@ const RecruiterApplications = () => {
           name="keyword"
           value={filters.keyword}
           onChange={handleFilter}
-          placeholder="TÃ¬m á»©ng viÃªn, job, cÃ´ng ty"
+          placeholder="Tìm ứng viên, job, công ty"
         />
         <select name="minAiScore" value={filters.minAiScore} onChange={handleFilter}>
-          <option value="0">Má»i Ä‘iá»ƒm AI</option>
-          <option value="50">AI tá»« 50</option>
-          <option value="60">AI tá»« 60</option>
-          <option value="70">AI tá»« 70</option>
-          <option value="80">AI tá»« 80</option>
+          <option value="0">Mọi điểm AI</option>
+          <option value="50">AI từ 50</option>
+          <option value="60">AI từ 60</option>
+          <option value="70">AI từ 70</option>
+          <option value="80">AI từ 80</option>
         </select>
       </section>
 
       <section className="recruiter-bulk-bar">
-        <strong>{selectedIds.length} há»“ sÆ¡ Ä‘Ã£ chá»n</strong>
+        <strong>{selectedIds.length} hồ sơ đã chọn</strong>
         <select value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value)}>
           {applicationStatuses.filter((status) => status !== "submitted").map((status) => (
             <option key={status} value={status}>{applicationStatusLabels[status] || status}</option>
           ))}
         </select>
         <button type="button" className="recruiter-secondary-action" disabled={selectedIds.length === 0} onClick={bulkUpdateStatus}>
-          Cáº­p nháº­t hÃ ng loáº¡t
+          Cập nhật hàng loạt
         </button>
         <button type="button" className="recruiter-primary-action" disabled={aiScoring} onClick={() => setAiMode((value) => !value)}>
-          {aiMode ? "Táº¯t lá»c AI" : "Báº­t lá»c AI"}
+          {aiMode ? "Tắt lọc AI" : "Bật lọc AI"}
         </button>
         <button type="button" className="recruiter-secondary-action" disabled={aiScoring} onClick={refreshAiScores}>
-          {aiScoring ? "AI Ä‘ang cháº¥m..." : "Cháº¥m láº¡i báº±ng AI"}
+          {aiScoring ? "AI đang chấm..." : "Chấm lại bằng AI"}
         </button>
       </section>
 
@@ -362,7 +362,7 @@ const RecruiterApplications = () => {
             onMouseDown={(event) => event.stopPropagation()}
             onTouchStart={(event) => event.stopPropagation()}
           >
-            {detailLoading ? <p className="recruiter-empty">Äang táº£i chi tiáº¿t...</p> : null}
+            {detailLoading ? <p className="recruiter-empty">Đang tải chi tiết...</p> : null}
             {!detailLoading && detail ? (
               <>
                 <header
@@ -376,30 +376,30 @@ const RecruiterApplications = () => {
                     onTouchStart={(event) => event.stopPropagation()}
                     onClick={closeDetail}
                   >
-                    ÄÃ³ng
+                    Đóng
                   </button>
-                  <h2>á»¨ng viÃªn: {detail.candidateName}</h2>
+                  <h2><span className="label-value-line"><span>Ứng viên:</span><span>{detail.candidateName}</span></span></h2>
                   <p>{applicationStatusLabels[detail.status] || detail.status}</p>
                 </header>
                 <div className="recruiter-detail-section">
-                  <h3>ThÃ´ng tin á»©ng viÃªn</h3>
-                  <p>Email: {detail.candidateEmail || "ChÆ°a cÃ³ email"}</p>
-                  <p>Sá»‘ Ä‘iá»‡n thoáº¡i: {detail.candidatePhone || "ChÆ°a cÃ³ sá»‘ Ä‘iá»‡n thoáº¡i"}</p>
-                  <p>Äá»‹a chá»‰: {detail.candidateAddress || "ChÆ°a cÃ³ Ä‘á»‹a chá»‰"}</p>
-                  <p>Kinh nghiá»‡m: {detail.candidateExperienceYears ?? 0} nÄƒm</p>
+                  <h3>Thông tin ứng viên</h3>
+                  <p className="label-value-line"><span>Email:</span><span>{detail.candidateEmail || "Chưa có email"}</span></p>
+                  <p className="label-value-line"><span>Số điện thoại:</span><span>{detail.candidatePhone || "Chưa có số điện thoại"}</span></p>
+                  <p className="label-value-line"><span>Địa chỉ:</span><span>{detail.candidateAddress || "Chưa có địa chỉ"}</span></p>
+                  <p className="label-value-line"><span>Kinh nghiệm:</span><span>{detail.candidateExperienceYears ?? 0} năm</span></p>
                 </div>
                 <div className="recruiter-detail-section">
-                  <h3>á»¨ng tuyá»ƒn</h3>
-                  <p>Job: {detail.jobTitle}</p>
-                  <p>CÃ´ng ty: {detail.companyName}</p>
-                  <p>NgÃ y ná»™p: {formatDate(detail.applicationDate)}</p>
+                  <h3>Ứng tuyển</h3>
+                  <p className="label-value-line"><span>Job:</span><span>{detail.jobTitle}</span></p>
+                  <p className="label-value-line"><span>Công ty:</span><span>{detail.companyName}</span></p>
+                  <p className="label-value-line"><span>Ngày nộp:</span><span>{formatDate(detail.applicationDate)}</span></p>
                 </div>
                 <div className="recruiter-detail-section">
-                  <h3>AI lá»c CV</h3>
+                  <h3>AI lọc CV</h3>
                   {detail.aiScoreAvailable ? (
                     <>
-                      <p>Äiá»ƒm phÃ¹ há»£p: <strong>{detail.aiScore}/100</strong></p>
-                      <p>Má»©c: {detail.aiLevel || "possible_match"}</p>
+                      <p className="label-value-line"><span>Điểm phù hợp:</span><strong>{detail.aiScore}/100</strong></p>
+                      <p className="label-value-line"><span>Mức:</span><span>{detail.aiLevel || "possible_match"}</span></p>
                       <div className="recruiter-skill-chart">
                         <ResponsiveContainer width="100%" height={180}>
                           <BarChart data={skillChartData}>
@@ -428,13 +428,13 @@ const RecruiterApplications = () => {
                           {detail.aiSignals.map((signal) => <li key={signal}>{signal}</li>)}
                         </ul>
                       ) : null}
-                      <p>Cháº¥m lÃºc: {formatDate(detail.aiScoredAt)}</p>
+                      <p className="label-value-line"><span>Chấm lúc:</span><span>{formatDate(detail.aiScoredAt)}</span></p>
                     </>
                   ) : (
-                    <p>ChÆ°a cÃ³ Ä‘iá»ƒm AI cho há»“ sÆ¡ nÃ y.</p>
+                    <p>Chưa có điểm AI cho hồ sơ này.</p>
                   )}
                   <button type="button" className="recruiter-secondary-action" disabled={aiScoring} onClick={scoreCurrentApplication}>
-                    {aiScoring ? "Äang cháº¥m..." : "Cháº¥m CV báº±ng AI"}
+                    {aiScoring ? "Đang chấm..." : "Chấm CV bằng AI"}
                   </button>
                 </div>
                 <div className="recruiter-detail-actions">
@@ -446,7 +446,7 @@ const RecruiterApplications = () => {
                   </Link>
                   {nextStatuses.map((status) => (
                     <button key={status} type="button" onClick={() => updateStatus(detail.id, status)}>
-                      Chuyá»ƒn {applicationStatusLabels[status] || status}
+                      Chuyển {applicationStatusLabels[status] || status}
                     </button>
                   ))}
                 </div>
@@ -455,11 +455,11 @@ const RecruiterApplications = () => {
                   {(detail.timeline || []).length > 0 ? detail.timeline.map((item, index) => (
                     <div key={`${item.toStatus}-${index}`} className="recruiter-timeline-row">
                       <strong>
-                        {applicationStatusLabels[item.fromStatus] || item.fromStatus || "Má»›i"} â†’ {applicationStatusLabels[item.toStatus] || item.toStatus}
+                        {applicationStatusLabels[item.fromStatus] || item.fromStatus || "Mới"} → {applicationStatusLabels[item.toStatus] || item.toStatus}
                       </strong>
                       <span>{formatDate(item.changedAt)}</span>
                     </div>
-                  )) : <p>ChÆ°a cÃ³ lá»‹ch sá»­ tráº¡ng thÃ¡i.</p>}
+                  )) : <p>Chưa có lịch sử trạng thái.</p>}
                 </div>
               </>
             ) : null}

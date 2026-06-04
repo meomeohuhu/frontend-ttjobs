@@ -1,61 +1,68 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import "./styles.css";
-import Login from "./pages/Login.jsx";
-import Register from "./pages/Register.jsx";
-import Home from "./pages/Home.jsx";
-import JobDetail from "./pages/JobDetail.jsx";
-import JobsList from "./pages/JobsList.jsx";
-import CompanyDetail from "./pages/CompanyDetail.jsx";
-import CareerGuide from "./pages/CareerGuide.jsx";
-import CareerRoadmap from "./pages/CareerRoadmap.jsx";
-import Community from "./pages/Community.jsx";
-import Tools from "./pages/Tools.jsx";
-import GrossNet from "./pages/tools/GrossNet.jsx";
-import PersonalIncomeTax from "./pages/tools/PersonalIncomeTax.jsx";
-import UnemploymentInsurance from "./pages/tools/UnemploymentInsurance.jsx";
-import SocialInsuranceOnce from "./pages/tools/SocialInsuranceOnce.jsx";
-import CompoundInterest from "./pages/tools/CompoundInterest.jsx";
-import SavingPlan from "./pages/tools/SavingPlan.jsx";
-import MBTI from "./pages/tools/MBTI.jsx";
-import MultipleIntelligence from "./pages/tools/MultipleIntelligence.jsx";
-import InterviewQuestions from "./pages/tools/InterviewQuestions.jsx";
-import SalaryLookup from "./pages/tools/SalaryLookup.jsx";
-import RecruiterDashboard from "./pages/recruiter/RecruiterDashboard.jsx";
-import RecruiterHistory from "./pages/recruiter/RecruiterHistory.jsx";
-import RecruiterChat from "./pages/recruiter/RecruiterChat.jsx";
-import RecruiterNotifications from "./pages/recruiter/RecruiterNotifications.jsx";
-import RecruiterCompanies from "./pages/recruiter/RecruiterCompanies.jsx";
-import RecruiterJobs from "./pages/recruiter/RecruiterJobs.jsx";
-import RecruiterApplications from "./pages/recruiter/RecruiterApplications.jsx";
-import RecruiterCandidateSearch from "./pages/recruiter/RecruiterCandidateSearch.jsx";
-import RecruiterInterviews from "./pages/recruiter/RecruiterInterviews.jsx";
-import RecruiterCampaigns from "./pages/recruiter/RecruiterCampaigns.jsx";
-import RecruiterReports from "./pages/recruiter/RecruiterReports.jsx";
-import MessagesPage from "./pages/user/Messages.jsx";
-import CandidateDashboard from "./pages/user/CandidateDashboard.jsx";
 import RoleGate from "./components/RoleGate.jsx";
 
-import ProfileSettings from "./pages/user/ProfileSettings.jsx";
-import PasswordSettings from "./pages/user/PasswordSettings.jsx";
-import NotificationSettings from "./pages/user/NotificationSettings.jsx";
-import JobNeedsSettings from "./pages/user/JobNeedsSettings.jsx";
-import SavedJobs from "./pages/user/SavedJobs.jsx";
-import AppliedJobs from "./pages/user/AppliedJobs.jsx";
-import MatchingJobs from "./pages/user/MatchingJobs.jsx";
-import MyInterviews from "./pages/user/MyInterviews.jsx";
-import MyCv from "./pages/user/MyCv.jsx";
-import CoverLetters from "./pages/user/CoverLetters.jsx";
-import RecruiterConnections from "./pages/user/RecruiterConnections.jsx";
-import ProfileViews from "./pages/user/ProfileViews.jsx";
-import CreateCV from "./pages/CreateCV.jsx";
+const Login = lazy(() => import("./pages/Login.jsx"));
+const Register = lazy(() => import("./pages/Register.jsx"));
+const Home = lazy(() => import("./pages/Home.jsx"));
+const JobDetail = lazy(() => import("./pages/JobDetail.jsx"));
+const JobsList = lazy(() => import("./pages/JobsList.jsx"));
+const CompanyDetail = lazy(() => import("./pages/CompanyDetail.jsx"));
+const CareerGuide = lazy(() => import("./pages/CareerGuide.jsx"));
+const CareerRoadmap = lazy(() => import("./pages/CareerRoadmap.jsx"));
+const Community = lazy(() => import("./pages/Community.jsx"));
+const Tools = lazy(() => import("./pages/Tools.jsx"));
+const GrossNet = lazy(() => import("./pages/tools/GrossNet.jsx"));
+const PersonalIncomeTax = lazy(() => import("./pages/tools/PersonalIncomeTax.jsx"));
+const UnemploymentInsurance = lazy(() => import("./pages/tools/UnemploymentInsurance.jsx"));
+const SocialInsuranceOnce = lazy(() => import("./pages/tools/SocialInsuranceOnce.jsx"));
+const CompoundInterest = lazy(() => import("./pages/tools/CompoundInterest.jsx"));
+const SavingPlan = lazy(() => import("./pages/tools/SavingPlan.jsx"));
+const MBTI = lazy(() => import("./pages/tools/MBTI.jsx"));
+const MultipleIntelligence = lazy(() => import("./pages/tools/MultipleIntelligence.jsx"));
+const InterviewQuestions = lazy(() => import("./pages/tools/InterviewQuestions.jsx"));
+const SalaryLookup = lazy(() => import("./pages/tools/SalaryLookup.jsx"));
+const RecruiterDashboard = lazy(() => import("./pages/recruiter/RecruiterDashboard.jsx"));
+const RecruiterHistory = lazy(() => import("./pages/recruiter/RecruiterHistory.jsx"));
+const RecruiterChat = lazy(() => import("./pages/recruiter/RecruiterChat.jsx"));
+const RecruiterNotifications = lazy(() => import("./pages/recruiter/RecruiterNotifications.jsx"));
+const RecruiterCompanies = lazy(() => import("./pages/recruiter/RecruiterCompanies.jsx"));
+const RecruiterJobs = lazy(() => import("./pages/recruiter/RecruiterJobs.jsx"));
+const RecruiterApplications = lazy(() => import("./pages/recruiter/RecruiterApplications.jsx"));
+const RecruiterCandidateSearch = lazy(() => import("./pages/recruiter/RecruiterCandidateSearch.jsx"));
+const RecruiterInterviews = lazy(() => import("./pages/recruiter/RecruiterInterviews.jsx"));
+const RecruiterCampaigns = lazy(() => import("./pages/recruiter/RecruiterCampaigns.jsx"));
+const RecruiterReports = lazy(() => import("./pages/recruiter/RecruiterReports.jsx"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers.jsx"));
+const AdminModulePage = lazy(() => import("./pages/admin/AdminModulePage.jsx"));
+const MessagesPage = lazy(() => import("./pages/user/Messages.jsx"));
+const CandidateDashboard = lazy(() => import("./pages/user/CandidateDashboard.jsx"));
+const ProfileSettings = lazy(() => import("./pages/user/ProfileSettings.jsx"));
+const PasswordSettings = lazy(() => import("./pages/user/PasswordSettings.jsx"));
+const NotificationSettings = lazy(() => import("./pages/user/NotificationSettings.jsx"));
+const JobNeedsSettings = lazy(() => import("./pages/user/JobNeedsSettings.jsx"));
+const SavedJobs = lazy(() => import("./pages/user/SavedJobs.jsx"));
+const AppliedJobs = lazy(() => import("./pages/user/AppliedJobs.jsx"));
+const MatchingJobs = lazy(() => import("./pages/user/MatchingJobs.jsx"));
+const MyInterviews = lazy(() => import("./pages/user/MyInterviews.jsx"));
+const MyCv = lazy(() => import("./pages/user/MyCv.jsx"));
+const CoverLetters = lazy(() => import("./pages/user/CoverLetters.jsx"));
+const RecruiterConnections = lazy(() => import("./pages/user/RecruiterConnections.jsx"));
+const ProfileViews = lazy(() => import("./pages/user/ProfileViews.jsx"));
+const SavedSearches = lazy(() => import("./pages/user/SavedSearches.jsx"));
+const InterviewRoom = lazy(() => import("./pages/InterviewRoom.jsx"));
+const CreateCV = lazy(() => import("./pages/CreateCV.jsx"));
 
 const root = createRoot(document.getElementById("root"));
-const recruiterRoles = ["RECRUITER", "ADMIN"];
+const recruiterRoles = ["RECRUITER"];
+const adminRoles = ["ADMIN"];
 root.render(
   <React.StrictMode>
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Suspense fallback={<div className="route-loading">Đang tải giao diện...</div>}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/jobs" element={<JobsList />} />
@@ -119,7 +126,30 @@ root.render(
             </RoleGate>
           }
         />
-        <Route path="/user/interviews" element={<MyInterviews />} />
+        <Route
+          path="/user/saved-searches"
+          element={
+            <RoleGate allowedRoles={["CANDIDATE"]}>
+              <SavedSearches />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/user/interviews"
+          element={
+            <RoleGate allowedRoles={["CANDIDATE"]}>
+              <MyInterviews />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/interviews/:interviewId/room"
+          element={
+            <RoleGate allowedRoles={["CANDIDATE", "RECRUITER"]}>
+              <InterviewRoom />
+            </RoleGate>
+          }
+        />
         <Route
           path="/messages"
           element={
@@ -224,9 +254,100 @@ root.render(
             </RoleGate>
           }
         />
+        <Route
+          path="/admin/dashboard"
+          element={
+            // Frontend gate chan user khong phai ADMIN truoc khi render admin console.
+            // Backend van la lop bao ve chinh cho /api/admin/**.
+            <RoleGate allowedRoles={adminRoles}>
+              <AdminDashboard />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RoleGate allowedRoles={adminRoles}>
+              <AdminUsers />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/admin/companies"
+          element={
+            <RoleGate allowedRoles={adminRoles}>
+              <AdminModulePage module="companies" />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/admin/company-approvals"
+          element={
+            <RoleGate allowedRoles={adminRoles}>
+              <AdminModulePage module="companyApprovals" />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/admin/jobs"
+          element={
+            <RoleGate allowedRoles={adminRoles}>
+              <AdminModulePage module="jobs" />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/admin/forum"
+          element={
+            <RoleGate allowedRoles={adminRoles}>
+              <AdminModulePage module="forum" />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/admin/email-campaigns"
+          element={
+            <RoleGate allowedRoles={adminRoles}>
+              <AdminModulePage module="emailCampaigns" />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/admin/ai-monitoring"
+          element={
+            <RoleGate allowedRoles={adminRoles}>
+              <AdminModulePage module="aiMonitoring" />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <RoleGate allowedRoles={adminRoles}>
+              <AdminModulePage module="analytics" />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <RoleGate allowedRoles={adminRoles}>
+              <AdminModulePage module="reports" />
+            </RoleGate>
+          }
+        />
+        <Route
+          path="/admin/audit-logs"
+          element={
+            <RoleGate allowedRoles={adminRoles}>
+              <AdminModulePage module="auditLogs" />
+            </RoleGate>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   </React.StrictMode>
 );

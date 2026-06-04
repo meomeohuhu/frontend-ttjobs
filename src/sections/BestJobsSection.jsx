@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
+import { ENABLE_DEMO_FALLBACK } from "../lib/demoFallback.js";
 
 const PAGE_SIZE = 6;
 const filters = ["Toàn quốc", "Hà Nội", "Thành phố Hồ Chí Minh", "Miền Bắc", "Miền Nam"];
@@ -95,8 +96,8 @@ const BestJobsSection = ({
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [showTip, setShowTip] = useState(true);
-  const displayJobs = error && jobs.length === 0 ? fallbackBestJobs : jobs;
-  const isDemoMode = error && jobs.length === 0;
+  const displayJobs = error && jobs.length === 0 && ENABLE_DEMO_FALLBACK ? fallbackBestJobs : jobs;
+  const isDemoMode = error && jobs.length === 0 && ENABLE_DEMO_FALLBACK;
 
   const filteredJobs = useMemo(
     () => filterJobsByRegion(displayJobs, activeRegion),

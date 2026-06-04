@@ -19,6 +19,10 @@ pnpm-debug.log*
 hs_err_pid*.log
 replay_pid*.log
 
+# Browser/UI verification artifacts
+.chrome-*/
+ui-*.png
+
 # Local editor/cache files
 .DS_Store
 Thumbs.db

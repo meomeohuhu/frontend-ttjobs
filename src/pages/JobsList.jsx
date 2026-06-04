@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
+import { ENABLE_DEMO_FALLBACK } from "../lib/demoFallback.js";
 import { fallbackJobMetadata, getOptionLabel, loadJobMetadata } from "../lib/jobMetadata.js";
 import HomeHeader from "../sections/HomeHeader.jsx";
 import AnnouncementBar from "../sections/AnnouncementBar.jsx";
@@ -91,6 +92,8 @@ const JobsList = () => {
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [actionError, setActionError] = useState("");
+  const [savedSearchName, setSavedSearchName] = useState("");
+  const [savingSearch, setSavingSearch] = useState(false);
 
   const category = searchParams.get("category") || "";
   const categoryLabel = category ? getOptionLabel(metadata.categories, category, searchParams.get("label") || category) : "Tất cả việc làm";
@@ -163,7 +166,9 @@ const JobsList = () => {
       } catch {
         if (active) {
           setJobs([]);
-          setError("Chưa kết nối được máy chủ, TTJobs đang hiển thị dữ liệu demo để bạn vẫn xem được trải nghiệm trang.");
+          setError(ENABLE_DEMO_FALLBACK
+            ? "Chưa kết nối được máy chủ, TTJobs đang hiển thị dữ liệu demo để bạn vẫn xem được trải nghiệm trang."
+            : "Chưa kết nối được máy chủ. Vui lòng thử lại sau.");
         }
       } finally {
         if (active) {
@@ -178,7 +183,8 @@ const JobsList = () => {
     };
   }, [category, experienceLevel, jobType, location, query, salaryMax, salaryMin, sort]);
 
-  const sourceJobs = error ? demoJobs : jobs;
+  const useDemoJobs = Boolean(error && ENABLE_DEMO_FALLBACK);
+  const sourceJobs = useDemoJobs ? demoJobs : jobs;
   const visibleJobs = useMemo(() => {
     const normalizedCategory = category.trim().toLowerCase();
     const normalizedQuery = normalizeText(query);
@@ -263,6 +269,47 @@ const JobsList = () => {
     }
   };
 
+  const buildSavedSearchName = () => {
+    if (savedSearchName.trim()) return savedSearchName.trim();
+    const parts = [query, categoryLabel !== "Tất cả việc làm" ? categoryLabel : "", location]
+      .map((value) => String(value || "").trim())
+      .filter(Boolean);
+    return parts.length ? parts.join(" - ") : "Tìm kiếm việc làm đã lưu";
+  };
+
+  const saveCurrentSearch = async () => {
+    setActionMessage("");
+    setActionError("");
+    setSavingSearch(true);
+    try {
+      await apiRequest("/api/saved-searches", {
+        method: "POST",
+        body: JSON.stringify({
+          name: buildSavedSearchName(),
+          keyword: query || null,
+          location: location || null,
+          category: category || null,
+          jobType: jobType || null,
+          experienceLevel: experienceLevel || null,
+          salaryMin: salaryMin ? Number(salaryMin) : null,
+          salaryMax: salaryMax ? Number(salaryMax) : null,
+          remoteOnly: normalizeText(location).includes("remote") ? true : null,
+          skills: [],
+          alertFrequency: "DAILY",
+          active: true
+        })
+      });
+      setSavedSearchName("");
+      setActionMessage("Đã lưu tìm kiếm và bật job alert hằng ngày cho bộ lọc này.");
+    } catch (err) {
+      setActionError((err.message || "").toLowerCase().includes("unauthorized")
+        ? "Bạn cần đăng nhập để lưu tìm kiếm."
+        : err.message || "Không thể lưu tìm kiếm hiện tại.");
+    } finally {
+      setSavingSearch(false);
+    }
+  };
+
   return (
     <div className="topcv-shell">
       <HomeHeader />
@@ -274,13 +321,13 @@ const JobsList = () => {
             <span className="jobs-list-eyebrow">Danh sách việc làm</span>
             <h1>{categoryLabel}</h1>
             <p>
-              Lọc nhanh theo vị trí, công ty hoặc khu vực để tìm cơ hội phù hợp. Trang vẫn có trạng thái demo đẹp khi backend chưa sẵn sàng.
+              Lọc nhanh theo vị trí, công ty hoặc khu vực để tìm cơ hội phù hợp.
             </p>
           </div>
           <div className="jobs-list-hero-card">
             <strong>{loading ? "Đang tải" : visibleJobs.length.toLocaleString("vi-VN")}</strong>
             <span>việc làm phù hợp</span>
-            <small>{error ? "Đang dùng dữ liệu demo giao diện" : "Dữ liệu tuyển dụng từ hệ thống"}</small>
+            <small>{useDemoJobs ? "Đang dùng dữ liệu demo giao diện" : "Dữ liệu tuyển dụng từ hệ thống"}</small>
           </div>
         </section>
 
@@ -374,6 +421,16 @@ const JobsList = () => {
           <div>
             <button type="button" onClick={applyMyNeeds}>Áp dụng nhu cầu của tôi</button>
             <button type="button" onClick={saveFiltersToNeeds}>Lưu bộ lọc thành nhu cầu</button>
+            <input
+              value={savedSearchName}
+              onChange={(event) => setSavedSearchName(event.target.value)}
+              placeholder="Tên tìm kiếm đã lưu"
+              aria-label="Tên tìm kiếm đã lưu"
+            />
+            <button type="button" onClick={saveCurrentSearch} disabled={savingSearch}>
+              {savingSearch ? "Đang lưu..." : "Lưu tìm kiếm"}
+            </button>
+            <Link to="/user/saved-searches">Quản lý tìm kiếm</Link>
           </div>
         </section>
 

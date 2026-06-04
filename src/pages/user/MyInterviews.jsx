@@ -17,6 +17,8 @@ const statusLabels = {
   cancelled: "Đã hủy"
 };
 
+const canJoinRoom = (status) => !["cancelled", "completed"].includes(String(status || "").toLowerCase());
+
 const MyInterviews = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +69,7 @@ const MyInterviews = () => {
               </div>
             </div>
             <div className="user-job-actions">
+              {canJoinRoom(item.status) ? <Link to={`/interviews/${item.id}/room`} className="outline-btn small">Vào phòng</Link> : null}
               {item.jobId ? <Link to={`/jobs/${item.jobId}`} className="outline-btn small">Xem tin</Link> : null}
               <Link to="/messages" className="outline-btn small">Tin nhắn</Link>
             </div>

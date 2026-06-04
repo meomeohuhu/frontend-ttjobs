@@ -1,26 +1,38 @@
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
 import { API_BASE_URL } from "./api.js";
 
-const WS_BASE_URL = API_BASE_URL.replace(/^http/, "ws");
+const WS_HTTP_BASE_URL = API_BASE_URL || window.location.origin;
 
-function buildFrame(command, headers = {}, body = "") {
-  const headerLines = Object.entries(headers)
-    .filter(([, value]) => value !== undefined && value !== null && value !== "")
-    .map(([key, value]) => `${key}:${value}`);
-  return `${command}\n${headerLines.join("\n")}\n\n${body}\0`;
+function createClient(onConnect) {
+  const token = localStorage.getItem("ttjobs_token");
+  const client = new Client({
+    webSocketFactory: () => new SockJS(`${WS_HTTP_BASE_URL}/ws`, null, {
+      transports: ["websocket", "xhr-streaming", "xhr-polling"]
+    }),
+    connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+    reconnectDelay: 0,
+    heartbeatIncoming: 10000,
+    heartbeatOutgoing: 10000,
+    debug: () => {}
+  });
+
+  client.onConnect = () => onConnect(client);
+  client.activate();
+
+  return () => {
+    if (client.active) {
+      client.deactivate();
+    }
+  };
 }
 
-function parseFrame(rawFrame) {
-  const [headerBlock, ...bodyParts] = rawFrame.split("\n\n");
-  const lines = headerBlock.split("\n").filter(Boolean);
-  const command = lines.shift();
-  const headers = {};
-  lines.forEach((line) => {
-    const separatorIndex = line.indexOf(":");
-    if (separatorIndex > -1) {
-      headers[line.slice(0, separatorIndex)] = line.slice(separatorIndex + 1);
-    }
-  });
-  return { command, headers, body: bodyParts.join("\n\n") };
+function readJson(message, onMessage) {
+  try {
+    onMessage(JSON.parse(message.body));
+  } catch {
+    // REST vẫn là nguồn dữ liệu dự phòng nếu payload realtime không hợp lệ.
+  }
 }
 
 export function subscribeToConversation(conversationId, onMessage) {
@@ -28,47 +40,66 @@ export function subscribeToConversation(conversationId, onMessage) {
     return () => {};
   }
 
-  const socket = new WebSocket(`${WS_BASE_URL}/ws`);
-  const token = localStorage.getItem("ttjobs_token");
-
-  socket.addEventListener("open", () => {
-    socket.send(buildFrame("CONNECT", {
-      "accept-version": "1.2",
-      "heart-beat": "10000,10000",
-      Authorization: token ? `Bearer ${token}` : ""
+  return createClient((client) => {
+    client.subscribe(`/topic/conversations/${conversationId}`, (message) => readJson(message, (payload) => {
+      if (payload?.type === "message_created" && payload?.payload) {
+        onMessage(payload.payload);
+        return;
+      }
+      onMessage(payload);
     }));
   });
+}
 
-  socket.addEventListener("message", (event) => {
-    String(event.data)
-      .split("\0")
-      .filter(Boolean)
-      .forEach((rawFrame) => {
-        const frame = parseFrame(rawFrame);
-        if (frame.command === "CONNECTED") {
-          socket.send(buildFrame("SUBSCRIBE", {
-            id: `conversation-${conversationId}`,
-            destination: `/topic/conversations/${conversationId}`
-          }));
-          return;
-        }
+export function subscribeToUserConversations(userId, onEvent) {
+  if (!userId || typeof onEvent !== "function") {
+    return () => {};
+  }
 
-        if (frame.command === "MESSAGE" && frame.body) {
-          try {
-            onMessage(JSON.parse(frame.body));
-          } catch {
-            // Ignore malformed realtime payloads; REST remains the source of truth.
-          }
-        }
-      });
+  return createClient((client) => {
+    client.subscribe(`/topic/users/${userId}/conversations`, (message) => readJson(message, onEvent));
   });
+}
 
-  return () => {
-    if (socket.readyState === WebSocket.OPEN) {
-      socket.send(buildFrame("DISCONNECT"));
+export function subscribeToForum(threadIds, onEvent) {
+  if (typeof onEvent !== "function") {
+    return () => {};
+  }
+
+  const ids = [...new Set((threadIds || []).filter(Boolean))];
+
+  return createClient((client) => {
+    client.subscribe("/topic/forum/events", (message) => readJson(message, onEvent));
+
+    client.subscribe("/topic/forum/posts", (message) => readJson(message, (payload) => {
+      onEvent({ type: "post", payload });
+    }));
+
+    ids.forEach((threadId) => {
+      client.subscribe(`/topic/forum/posts/${threadId}/likes`, (message) => readJson(message, (payload) => {
+        onEvent({ type: "like", payload });
+      }));
+      client.subscribe(`/topic/forum/posts/${threadId}/comments`, (message) => readJson(message, (payload) => {
+        onEvent({ type: "comment", threadId, payload });
+      }));
+    });
+  });
+}
+
+export function subscribeToInterviewRoom(roomId, { onSignal, onChat, onReady } = {}) {
+  if (!roomId) {
+    return () => {};
+  }
+
+  return createClient((client) => {
+    if (typeof onSignal === "function") {
+      client.subscribe(`/topic/interviews/${roomId}/signal`, (message) => readJson(message, onSignal));
     }
-    if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-      socket.close();
+    if (typeof onChat === "function") {
+      client.subscribe(`/topic/interviews/${roomId}/chat`, (message) => readJson(message, onChat));
     }
-  };
+    if (typeof onReady === "function") {
+      onReady();
+    }
+  });
 }

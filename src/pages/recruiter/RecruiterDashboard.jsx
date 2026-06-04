@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../../lib/api.js";
 import RecruiterLayout from "./RecruiterLayout.jsx";
-import { formatDate, formatNumber } from "./recruiterUtils.js";
+import { applicationStatusLabels, formatDate, formatNumber } from "./recruiterUtils.js";
 
 const RecruiterDashboard = () => {
   const [dashboard, setDashboard] = useState(null);
@@ -34,10 +34,18 @@ const RecruiterDashboard = () => {
     return Object.entries(counts).filter(([, count]) => Number(count) > 0).length;
   }, [dashboard]);
 
+  const totalApplications = useMemo(() => {
+    const counts = dashboard?.applicationStatusCounts || {};
+    return Object.values(counts).reduce((sum, count) => sum + Number(count || 0), 0);
+  }, [dashboard]);
+
+  const hiredCount = Number(dashboard?.applicationStatusCounts?.hired || 0);
+  const conversionRate = totalApplications > 0 ? Math.round((hiredCount / totalApplications) * 100) : 0;
+
   return (
     <RecruiterLayout
       title="Dashboard tuyển dụng"
-      description="Tổng quan job, ứng viên và công ty đang quản lý."
+      description="Tổng quan job, ứng viên, công ty và hoạt động tuyển dụng đang quản lý."
       actions={<Link to="/recruiter/jobs" className="recruiter-primary-action">Tạo job</Link>}
     >
       {loading ? <p className="recruiter-state">Đang tải dashboard...</p> : null}
@@ -59,8 +67,8 @@ const RecruiterDashboard = () => {
               <strong>{formatNumber(dashboard.expiringSoonJobCount)}</strong>
             </article>
             <article className="recruiter-kpi-card">
-              <span>Trạng thái đang xử lý</span>
-              <strong>{formatNumber(activeStatusCount)}</strong>
+              <span>Tỷ lệ tuyển</span>
+              <strong>{conversionRate}%</strong>
             </article>
           </section>
 
@@ -69,6 +77,7 @@ const RecruiterDashboard = () => {
               <article className="recruiter-panel">
                 <header className="recruiter-panel-header">
                   <h2>Ứng viên theo trạng thái</h2>
+                  <span>{formatNumber(activeStatusCount)} trạng thái đang có hồ sơ</span>
                 </header>
                 <div className="recruiter-status-grid">
                   {Object.entries(dashboard.applicationStatusCounts || {}).map(([status, count]) => (
@@ -77,7 +86,7 @@ const RecruiterDashboard = () => {
                       to={`/recruiter/applications?status=${status}`}
                       className="recruiter-status-chip"
                     >
-                      <strong>{status}</strong>
+                      <strong>{applicationStatusLabels[status] || status}</strong>
                       <span>{formatNumber(count)}</span>
                     </Link>
                   ))}
@@ -102,7 +111,7 @@ const RecruiterDashboard = () => {
                           <span>{application.jobTitle}</span>
                         </div>
                         <div>
-                          <strong>{application.status}</strong>
+                          <strong>{applicationStatusLabels[application.status] || application.status}</strong>
                           <span>{formatDate(application.applicationDate)}</span>
                         </div>
                         <div>
@@ -155,6 +164,30 @@ const RecruiterDashboard = () => {
                     ))
                   ) : (
                     <p className="recruiter-empty">Chưa có công ty nào được gán.</p>
+                  )}
+                </div>
+              </article>
+
+              <article className="recruiter-panel">
+                <header className="recruiter-panel-header">
+                  <h2>Hoạt động gần đây</h2>
+                  <Link to="/recruiter/history">Xem lịch sử</Link>
+                </header>
+                <div className="recruiter-activity-list">
+                  {(dashboard.recentActivities || []).length > 0 ? (
+                    dashboard.recentActivities.slice(0, 6).map((activity) => (
+                      <Link
+                        key={activity.id}
+                        to={activity.applicationId ? `/recruiter/applications/${activity.applicationId}` : "/recruiter/history"}
+                        className="recruiter-activity-card"
+                      >
+                        <strong>{activity.title || "Hoạt động"}</strong>
+                        <span>{activity.details || activity.jobTitle || activity.companyName || "Cập nhật mới"}</span>
+                        <small>{formatDate(activity.createdAt)}</small>
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="recruiter-empty">Chưa có hoạt động gần đây.</p>
                   )}
                 </div>
               </article>

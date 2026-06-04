@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
+import { ENABLE_DEMO_FALLBACK } from "../lib/demoFallback.js";
 import HomeHeader from "../sections/HomeHeader.jsx";
 import Footer from "../sections/Footer.jsx";
 import AnnouncementBar from "../sections/AnnouncementBar.jsx";
@@ -52,7 +53,9 @@ const splitContent = (content) =>
     .map((part) => part.trim())
     .filter(Boolean);
 
-const friendlyGuideError = "Máy chủ cẩm nang chưa phản hồi. TTJobs đang hiển thị nội dung mẫu để trang vẫn hoàn chỉnh khi demo.";
+const friendlyGuideError = ENABLE_DEMO_FALLBACK
+  ? "Máy chủ cẩm nang chưa phản hồi. TTJobs đang hiển thị nội dung mẫu để trang vẫn hoàn chỉnh khi demo."
+  : "Máy chủ cẩm nang chưa phản hồi. Vui lòng thử lại sau.";
 
 const CareerGuide = () => {
   const { slug } = useParams();
@@ -138,8 +141,10 @@ const CareerGuide = () => {
         }
       } catch (err) {
         if (active) {
-          setDetailArticle(fallbackArticles.find((article) => article.slug === slug) || null);
-          setDetailError("Bài viết thật chưa tải được, đang hiển thị bản mẫu để giữ trải nghiệm đọc.");
+          setDetailArticle(ENABLE_DEMO_FALLBACK ? fallbackArticles.find((article) => article.slug === slug) || null : null);
+          setDetailError(ENABLE_DEMO_FALLBACK
+            ? "Bài viết thật chưa tải được, đang hiển thị bản mẫu để giữ trải nghiệm đọc."
+            : "Bài viết chưa tải được. Vui lòng thử lại sau.");
         }
       } finally {
         if (active) {
@@ -154,7 +159,8 @@ const CareerGuide = () => {
     };
   }, [slug]);
 
-  const displayArticles = error || articles.length === 0 ? fallbackArticles : articles;
+  const useDemoArticles = Boolean(ENABLE_DEMO_FALLBACK && (error || articles.length === 0));
+  const displayArticles = useDemoArticles ? fallbackArticles : articles;
 
   const landingFeatured = useMemo(() => {
     return displayArticles.find((item) => item.featured) || displayArticles[0] || null;
@@ -244,12 +250,12 @@ const CareerGuide = () => {
                   {landingFeatured?.coverImageUrl && (
                     <img className="guide-cover" src={landingFeatured.coverImageUrl} alt={landingFeatured.title} />
                   )}
-                  <span className="hero-banner-label">{error ? "Bản demo" : "Nổi bật"}</span>
+                  <span className="hero-banner-label">{useDemoArticles ? "Bản demo" : "Nổi bật"}</span>
                   <h2>{landingFeatured?.title || "Cẩm nang nổi bật cho ứng viên"}</h2>
                   <p>{landingFeatured?.summary || "Các gợi ý ngắn gọn giúp bạn chuẩn bị hồ sơ và ứng tuyển tự tin hơn."}</p>
                   <div className="guide-meta-row">
                     <span>{formatReadingTime(landingFeatured?.readingTimeMinutes)}</span>
-                    {error ? <span>• Nội dung mẫu</span> : null}
+                    {useDemoArticles ? <span>• Nội dung mẫu</span> : null}
                   </div>
                   <Link className="section-link" to={`/career-guide/${landingFeatured?.slug}`}>
                     Xem chi tiết
@@ -342,7 +348,7 @@ const CareerGuide = () => {
                         <div className="guide-card-meta">
                           <span>{formatReadingTime(article.readingTimeMinutes)}</span>
                           {article.featured && <strong>Nổi bật</strong>}
-                          {error && <strong>Demo</strong>}
+                          {useDemoArticles && <strong>Demo</strong>}
                         </div>
                       </Link>
                     ))}

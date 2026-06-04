@@ -26,6 +26,7 @@ const Register = () => {
     setStatus({ loading: true, error: "", success: "" });
     try {
       await apiRequest("/api/auth/register", {
+        skipAuth: true,
         method: "POST",
         body: JSON.stringify({
           name: form.name,
@@ -95,6 +96,7 @@ const Register = () => {
                   placeholder="Nguyễn Văn A"
                   type="text"
                   name="name"
+                  autoComplete="name"
                   value={form.name}
                   onChange={handleChange}
                   required
@@ -121,6 +123,7 @@ const Register = () => {
                   placeholder="name@email.com"
                   type="email"
                   name="email"
+                  autoComplete="email"
                   value={form.email}
                   onChange={handleChange}
                   required
@@ -147,6 +150,7 @@ const Register = () => {
                   placeholder="Tối thiểu 8 ký tự"
                   type="password"
                   name="password"
+                  autoComplete="new-password"
                   value={form.password}
                   onChange={handleChange}
                   required
@@ -173,6 +177,7 @@ const Register = () => {
                   placeholder="Nhập lại mật khẩu"
                   type="password"
                   name="confirmPassword"
+                  autoComplete="new-password"
                   value={form.confirmPassword}
                   onChange={handleChange}
                   required

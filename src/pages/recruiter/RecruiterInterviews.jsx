@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../lib/api.js";
 import RecruiterLayout from "./RecruiterLayout.jsx";
 import { formatDate } from "./recruiterUtils.js";
@@ -12,6 +12,8 @@ const emptyForm = {
   meetingLink: "",
   note: ""
 };
+
+const canJoinRoom = (status) => !["cancelled", "completed"].includes(String(status || "").toLowerCase());
 
 const RecruiterInterviews = () => {
   const [searchParams] = useSearchParams();
@@ -122,18 +124,21 @@ const RecruiterInterviews = () => {
             {loading ? <p className="recruiter-empty">Đang tải lịch...</p> : null}
             {!loading && interviews.length === 0 ? <p className="recruiter-empty">Chưa có lịch phỏng vấn.</p> : null}
             {!loading && interviews.map((item) => (
-              <div key={item.id} className="recruiter-table-row">
-                <div>
+              <div key={item.id} className="recruiter-table-row recruiter-interview-row">
+                <div className="recruiter-interview-person">
                   <strong>{item.candidateName || "Ứng viên"}</strong>
                   <span>{item.jobTitle || "Job"} · {item.companyName || "Công ty"}</span>
                 </div>
-                <div>
+                <div className="recruiter-interview-time">
                   <strong>{formatDate(item.scheduledAt)}</strong>
                   <span>{item.durationMinutes || 30} phút · {item.status}</span>
                 </div>
                 <div className="recruiter-row-actions">
-                  <button type="button" onClick={() => updateStatus(item.id, "confirmed")}>Confirm</button>
-                  <button type="button" onClick={() => updateStatus(item.id, "cancelled")}>Cancel</button>
+                  {canJoinRoom(item.status) ? (
+                    <Link className="recruiter-room-action" to={`/interviews/${item.id}/room`}>Vào phòng</Link>
+                  ) : null}
+                  <button type="button" onClick={() => updateStatus(item.id, "confirmed")}>Xác nhận</button>
+                  <button type="button" onClick={() => updateStatus(item.id, "cancelled")}>Hủy</button>
                 </div>
               </div>
             ))}

@@ -44,6 +44,13 @@ const toJobForm = (job) => ({
   status: job.status || "draft"
 });
 
+const verificationLabels = {
+  PENDING: "Chờ xác minh",
+  VERIFIED: "Đã xác minh",
+  REJECTED: "Bị từ chối",
+  SUSPENDED: "Tạm khóa"
+};
+
 const RecruiterJobs = () => {
   const [metadata, setMetadata] = useState(fallbackJobMetadata);
   const [companies, setCompanies] = useState([]);
@@ -67,6 +74,13 @@ const RecruiterJobs = () => {
     () => jobs.find((job) => String(job.id) === String(selectedJobId)) || null,
     [jobs, selectedJobId]
   );
+
+  const selectedCompany = useMemo(
+    () => companies.find((company) => String(company.id) === String(form.companyId)) || null,
+    [companies, form.companyId]
+  );
+
+  const canPublishSelectedCompany = selectedCompany?.verificationStatus === "VERIFIED";
 
   const knownCategories = useMemo(
     () => new Set(metadata.categories.map((option) => option.value)),
@@ -248,6 +262,11 @@ const RecruiterJobs = () => {
       setShowLocationPicker(true);
       return;
     }
+    if (status === "open" && !canPublishSelectedCompany) {
+      const label = verificationLabels[selectedCompany?.verificationStatus] || "Chưa xác minh";
+      setError(`Công ty "${selectedCompany?.name || "đang chọn"}" chưa được xác minh (${label}), nên chưa thể publish job.`);
+      return;
+    }
     setSaving(true);
     setMessage("");
     setError("");
@@ -397,9 +416,18 @@ const RecruiterJobs = () => {
               <select name="companyId" value={form.companyId} onChange={handleChange} required disabled={Boolean(selectedJob)}>
                 <option value="">Chọn công ty</option>
                 {companies.map((company) => (
-                  <option key={company.id} value={company.id}>{company.name}</option>
+                  <option key={company.id} value={company.id}>
+                    {company.name} - {verificationLabels[company.verificationStatus] || "Chưa xác minh"}
+                  </option>
                 ))}
               </select>
+              {selectedCompany ? (
+                <small className={`company-verification-note ${canPublishSelectedCompany ? "verified" : "blocked"}`}>
+                  {canPublishSelectedCompany
+                    ? "Công ty đã xác minh, có thể publish job."
+                    : "Công ty chưa được xác minh nên chỉ có thể lưu job nháp."}
+                </small>
+              ) : null}
             </label>
             <label>
               <span>Trạng thái</span>
@@ -536,7 +564,7 @@ const RecruiterJobs = () => {
                 {saving ? "Đang lưu..." : "Lưu"}
               </button>
               {!selectedJob || form.status === "draft" ? (
-                <button type="button" className="recruiter-secondary-action" onClick={() => submitJob("open")} disabled={saving}>
+                <button type="button" className="recruiter-secondary-action" onClick={() => submitJob("open")} disabled={saving || !canPublishSelectedCompany}>
                   Publish
                 </button>
               ) : null}

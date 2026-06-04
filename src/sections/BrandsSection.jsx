@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
+import { ENABLE_DEMO_FALLBACK } from "../lib/demoFallback.js";
 
 const tabs = ["Tất cả", "Sản phẩm", "Marketing", "Sales", "IT - Phần mềm", "Tài chính", "Sản xuất", "Dịch vụ"];
 
@@ -114,11 +115,11 @@ const BrandsSection = () => {
     };
   }, []);
 
-  const displayBrands = error && brands.length === 0 ? fallbackBrands : brands;
+  const displayBrands = error && brands.length === 0 && ENABLE_DEMO_FALLBACK ? fallbackBrands : brands;
   const visibleBrands = useMemo(() => filterBrandsByTab(displayBrands, activeTab), [displayBrands, activeTab]);
   const featuredBrand = useMemo(() => visibleBrands[0] || displayBrands[0] || null, [displayBrands, visibleBrands]);
   const sideBrands = useMemo(() => visibleBrands.slice(0, 6), [visibleBrands]);
-  const isDemoMode = error && brands.length === 0;
+  const isDemoMode = error && brands.length === 0 && ENABLE_DEMO_FALLBACK;
 
   return (
     <section className="brands-section company-section">
